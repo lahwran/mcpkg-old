@@ -1,0 +1,148 @@
+#single-package metadata spec.
+#package index is generated automatically from the packages in the repo
+#and some extra metadata.
+#blank lines are ignored. if a line starts with # it is a comment. to allow comments in names,
+#comments must be on their own lines.
+
+#name - Package names must consist only of lower case letters (a-z), digits (0-9), plus (+) and minus (-) signs, and periods (.). They must be at least two characters long and must start with an alphanumeric character.
+#when the name conflicts with the name from another repo, it is prefixed with the repository owner name. if it still conflicts, then the version is added. if it still conflicts, the user is alerted.
+Package: <PackageName>
+
+#Contact should be either an email or a url (such as an irc url) where modder can be contacted
+#can specify multiple Author lines when the package is a collaboration
+Author: Modder<Contact>
+
+#optional
+Homepage: <URL>
+
+#Section to file this package under. may only be a section name declared in a repository list which has the permission to do so.
+Section: <A Name Goes Here>
+
+#may only have one version subsection!
+<Version Subsections>
+
+Description: <single line synopsis>
+<extended description over several lines>
+
+
+
+
+
+#format of the version subsection
+#MCVersion uses comparison format described below, packageversion is an arbitrary string.
+#uses order to determine which version is newer than which. use a dash ('-') character
+#if this version has no mod version - for example the first release of modloader for a mcversion.
+#internally will assign number based on sort order.
+#if meta is provided, this package is a metapackage and no actual download will be provided 
+Version: <MCVersionComparison> <PackageVersion> [meta]
+#all subfields are optional - if not included, assumed to be blank.
+
+Changelog: <changelog summary>
+<optional multi-line changelong>
+
+#mutually exclusive with Changelog
+ChangelogUrl: <url to changelog text file>
+
+#these two are just metadata, however are required if this package uses static block/item IDs.
+#dynamic block/item IDs are not recommended.
+ItemIDs: <IDList>
+BlockIDs:
+
+#<IDList> format:
+a,b,c,d...
+#example:
+1,3,18,84
+
+
+#dependency cycles: be careful what you put in these fields. if a dependency cycle is detected, the mod install will abort!
+#I will be writing a checker function that downloads the lists and checks for loops.
+
+
+#absolute dependency, package will not be installed if any depends package installs failed
+#if omitted, assumes no depends
+Depends: <PackageList>
+
+#if included, specifies packages that this package must be installed before, if those are being installed
+InstallBefore: <PackageList>
+
+#if included, specifies packages that this package must be installed after, if those are being installed
+InstallAfter: <PackageList>
+
+#This declares a strong, but not absolute, dependency.
+#"The Recommends field should list packages that would be found together with this one in all but unusual installations."
+Recommends: <PackageList>
+
+# like Recommends and Depends, but will never be installed automatically
+#"This is used to declare that one package may be more useful with one or more others. 
+# Using this field tells the packaging system and the user that the listed packages are
+# related to this one and can perhaps enhance its usefulness, but that installing 
+# this one without them is perfectly reasonable."
+Suggests: <PackageList>
+
+#"This field is similar to Suggests but works in the opposite direction.
+# It is used to declare that a package can enhance the functionality of another package."
+Enhances: <PackageList>
+
+#refuse to activate this package to install if a package on this list is activated.
+#only for when there is a known incompatibility with a mod that doesn't change the same class files
+#normally, hard conflicts will refuse to install when their files conflict, in which case
+#use of this field is unneeded.
+Conflicts: <PackageList>
+
+#package dependencies that this package provides - 
+Provides: <PackageList>
+
+
+
+
+
+#PackageList format:
+<Package1>, <Package2>, <PackageN>
+
+#PackageN format:
+<PackageName>:<MC Version comparison>/<Package Version comparison>
+
+#you can omit the mc version as such:
+<PackageName>[comparison]<Package Version>
+#in which case, it will assume the MC Version Comparison used on your mod
+
+#Version Comparison format:
+=
+!=
+
+#these comparisons may be used in range versions, as well as on their own:
+>=
+<=
+>
+<
+
+#uses of comparisons
+Version[comparison]x[comparison]Version
+[comparison]Version
+
+#special version:
+^ means the first version of specified mod that fits within the range given for mcversion; $ means the last.
+
+#examples:
+1.2<=x<1.3 in a mc version means that it has to be 1.2.
+>=1.1 in the package version means (fairly obviously) anything after 1.1 or 1.1 itself
+>=^ in the package version means any version of this package that works for specified range of minecraft versions.
+^>=x<1.5 in the package version means anything that works for this mc version up to 1.5
+
+#will normally install latest version that matches comparison, unless specified otherwise. gui will have no option to do this. cli only.
+
+
+
+
+##################
+## example info ##
+##################
+
+Package: GuiAPI
+Author: lahwran<irc://irc.esper.net/lahwran>
+Section: libraries
+Version: 1.2<=x<1.3 0.9.5
+Description: API for modders to add Settings and Advanced GUIs
+allows modders to easily specify settings to save to file,
+as well as a way to do advanced guis using the TWL java widget library.
+

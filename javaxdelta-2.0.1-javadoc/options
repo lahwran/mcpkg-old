@@ -1,0 +1,19 @@
+-classpath 'c:/src/workspace/javaxdelta/target/classes;C:/Documents and Settings/rosse/.m2/repository/trove/trove/1.0.2/trove-1.0.2.jar'
+ -protected
+-sourcepath
+'c:/src/workspace/javaxdelta/src/main/java'
+-author
+-bottom
+'Copyright © 2003-2009. All Rights Reserved.'
+-charset
+'ISO-8859-1'
+-d
+'c:/src/workspace/javaxdelta/target/apidocs'
+-doctitle
+'javaxdelta 2.0.1 API'
+-link
+'http://java.sun.com/j2se/1.5.0/docs/api'
+-use
+-version
+-windowtitle
+'javaxdelta 2.0.1 API'
