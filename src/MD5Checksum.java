@@ -25,9 +25,26 @@ public class MD5Checksum {
      fis.close();
      return complete.digest();
    }
+   
+   public static String strmd5(String input)
+   {
+	     MessageDigest complete = null;
+	     try {
+	 		complete = MessageDigest.getInstance("MD5");
+	 	} catch (NoSuchAlgorithmException e) {
+	 		// won't happen ... well if it does screw it it's a loser java install
+	 		e.printStackTrace();
+	 	}
+	 	complete.update(input.getBytes());
+	 	byte[] b = complete.digest();;
+	     String result = "";
+	     for (int i=0; i < b.length; i++) {
+	       result +=
+	          Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
+	      }
+	     return result;
+   }
 
-   // see this How-to for a faster way to convert
-   // a byte array to a HEX string
    public static String make(InputStream fis) throws IOException {
      byte[] b = createChecksum(fis);
      String result = "";
