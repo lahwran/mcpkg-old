@@ -2,11 +2,27 @@
 #blank lines are ignored. if a line starts with # it is a comment. to allow comments in names,
 #comments must be on their own lines.
 
-#following field must be the first field in the file if it is included at all
+#format is:
+#Key: Value
+
+#some keys attach to blocks. 
+#in the blocks, a key will end the block, even if the key is invalid. 
+#keys may not contain spaces, and if there is a space in a line before a ': ', then it
+#will not be considered a key.
+#also, the special key Block is prepended to lines that are not ignored and have no key.
+#to force a line to be part of a block, give it the key Block:
+#for instance:
+#Description: example description
+#Block: more description
+#Block: even more description
+
+
+#following field is highly recommended to be first field in file
 #if the cached index version differs, then the whole file will be redownloaded and reloaded
 #if it does not, then the download will stop
 #therefore it is recommended to put this as early in the file as possible
 #if it is not included, file is always downloaded and parsed as though it had changed
+#IndexVersion being missing from cache also forces a redownload
 IndexVersion: <arbitrary string>
 
 #name - Package names must consist only of lower case letters (a-z), digits (0-9), plus (+) and minus (-) signs, and periods (.). They must be at least two characters long and must start with an alphanumeric character.
