@@ -16,20 +16,11 @@ Homepage: <URL>
 #Section to file this package under. may only be a section name declared in a repository list which has the permission to do so.
 Section: <A Name Goes Here>
 
-#multiple version subsections are supplied - one for each version, 
-#sorted with newest first to oldest. uses sort order to determine which is newest.
-<Version Subsections>
+#----------------------------------------
+#version-specific information
 
-Description: <single line synopsis>
-<extended description over several lines>
-
-
-
-
-
-#format of the version subsection
 #MCVersion uses comparison format described below, packageversion is an arbitrary string.
-#uses order to determine which version is newer than which. use a dash ('-') character
+#uses order to determine which version is newer than which. use a period ('.') character
 #if this version has no mod version - for example the first release of modloader for a mcversion.
 #internally will assign number based on sort order.
 #url must be direct - mediafire, for example, cannot be used for this. dropbox+bit.ly, however, can.
@@ -99,37 +90,30 @@ Provides: <PackageList>
 <Package1>, <Package2>, <PackageN>
 
 #PackageN format:
-<PackageName>:<MC Version comparison>/<Package Version comparison>
-
-#you can omit the mc version as such:
 <PackageName>[comparison]<Package Version>
-#in which case, it will assume the MC Version Comparison used on your mod
+#will assume the MC Version Comparison used on your mod
 
 #Version Comparison format:
-=
-!=
+== package version equals
+!= package version does not equal
+>= package version is at least
+<= package version is at most
+>> package version is above
+<< package version is below
 
-#these comparisons may be used in range versions, as well as on their own:
->=
-<=
->
-<
 
-#uses of comparisons
-Version[comparison]x[comparison]Version
-[comparison]Version
+#versions are compared as specified by the debian version comparison algorithm:
+# http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 
-#special version:
-^ means the first version of specified mod that fits within the range given for mcversion; $ means the last.
 
-#examples:
-1.2<=x<1.3 in a mc version means that it has to be 1.2.
->=1.1 in the package version means (fairly obviously) anything after 1.1 or 1.1 itself
->=^ in the package version means any version of this package that works for specified range of minecraft versions.
-^>=x<1.5 in the package version means anything that works for this mc version up to 1.5
+#will not automatically upgrade to latest version when version in repo is newer - instead, will offer to upgrade
 
-#will normally install latest version that matches comparison, unless specified otherwise. gui will have no option to do this. cli only.
 
+#end of version-specific information
+#----------------------------------------
+
+Description: <single line synopsis>
+<extended description over several lines>
 
 
 
