@@ -6,6 +6,7 @@ import java.io.IOException;
 
 public class CompareVersion {
 
+	static boolean debug = false;
 	public static void main(String[] args) {
 		try {
 			BufferedReader inputStream =  new BufferedReader(new FileReader("versions.lst"));
@@ -14,9 +15,17 @@ public class CompareVersion {
 			{
 				System.out.println();
 				String[] SplitTest = l.split(" ");
+				System.out.println("beforetest: "+l+" will be checked against "+new Integer(SplitTest[2]) );
 				int res = compare(SplitTest[0],SplitTest[1]);
-				System.out.print("test: "+l+(res == new Integer(SplitTest[2])? "==" : "!=") );
+				System.out.print("test: "+SplitTest[0]+" "+SplitTest[1]+" "+new Integer(SplitTest[2])+" "+(res == new Integer(SplitTest[2])? "==" : "!=") );
 				System.out.println(" "+res);
+				if(res != new Integer(SplitTest[2]))
+				{
+					debug = true;
+					res = compare(SplitTest[0],SplitTest[1]);
+					System.out.println(res);
+					return;
+				}
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -27,10 +36,23 @@ public class CompareVersion {
 		}
 	}
 	
+	public static void p(String... s)
+	{
+		if(!debug) return;
+		for(int i=0; i<s.length; i++)
+		{
+			System.out.print(s[i]+" ");
+		}
+		System.out.println();
+	}
+	
 	public static int compare(String A, String B) //1 means A > B, -1 means A < B
 	{
 		if(A.equals(B))
+		{
+			p("A equals B",A,B);
 			return 0;
+		}
 		
 		int epochA = 0;
 		int epochB = 0;
@@ -47,10 +69,12 @@ public class CompareVersion {
 		
 		if(epochA < epochB)
 		{
+			p("epochA < epochB",""+epochA,""+epochB);
 			return -1; 
 		}
 		else if (epochA > epochB)
 		{
+			p("epochA > epochB",""+epochA,""+epochB);
 			return 1;
 		}
 		
@@ -111,23 +135,37 @@ public class CompareVersion {
 		//System.out.println(epoch);
 		//System.out.println(upstream);
 		//System.out.println(debian);
-		
+
+		p("split:",epoch, upstream, debian);
 		return new String[] {epoch, upstream, debian};
 	}
 	
 	public static int compareSubsection(String A, String B)
 	{
 		int mode = 0; //0 = string, 1 = number
-		while(A.length() > 0 || A.length() > 0)
+		p("compare subsection:",A, B);
+		while(A.length() > 0 || B.length() > 0)
 		{
+			p("compare subsection mode",""+mode,A, B);
 			int AOffset = 0;
-			while(AOffset+1 < A.length() && A.substring(0, AOffset+1).matches("^["+(mode == 0 ? "^" : "")+"0-9]*$"))
+			
+			String regex = "";
+			if(mode == 0)
+			{
+				regex = "^[^0-9]*$";
+			}
+			else
+			{
+				regex = "^[0-9]*$";
+			}
+			
+			while(AOffset < A.length() && A.substring(0, AOffset+1).matches(regex))
 			{
 				AOffset++;
 				
 			}
 			int BOffset = 0;
-			while(BOffset+1 < B.length() && B.substring(0, BOffset+1).matches("^["+(mode == 0 ? "^" : "")+"0-9]*$"))
+			while(BOffset < B.length() && B.substring(0, BOffset+1).matches(regex))
 			{
 				BOffset++;
 				
@@ -138,10 +176,13 @@ public class CompareVersion {
 			
 			A = A.substring(AOffset, A.length());
 			B = B.substring(BOffset, B.length());
+			p("compare subsection chomp",A,B,"subs:",ASub,BSub);
 			if(mode == 0)
 			{
 				while(ASub.length() > 0 || BSub.length() > 0)
 				{
+
+					p("character compare",ASub,BSub);
 					int av = 0;
 					int bv = 0;
 					if(ASub.length() > 0)
@@ -162,16 +203,19 @@ public class CompareVersion {
 					}
 					if (av < bv)
 					{
+						p("av < bv",""+av,""+bv);
 						return -1;
 					}
 					else if(av > bv)
 					{
+						p("av > bv",""+av,""+bv);
 						return 1;
 					}
 				}
 			}
 			else
 			{
+				p("integer compare");
 				int av = 0;
 				int bv = 0;
 				if(!ASub.equals(""))
@@ -184,15 +228,19 @@ public class CompareVersion {
 				}
 				if (av < bv)
 				{
+					p("av < bv",""+av,""+bv);
 					return -1;
 				}
 				else if(av > bv)
 				{
+					p("av > bv",""+av,""+bv);
 					return 1;
 				}
 			}
 			mode = (mode == 0 ? 1 : 0); //invert mode - this seems a little hard to read
+			p("mode now",""+mode);
 		}
+		p("result = they are equal, returning 0");
 		return 0;
 	}
 	public static int characterSortValue(String c)
