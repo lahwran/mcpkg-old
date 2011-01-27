@@ -41,35 +41,7 @@ import com.nothome.delta.GDiffWriter;
 
 public class Patcher {
 
-	public static String getMcDir()
-	{
-		String s1 = System.getProperty("user.home", ".");
-		String os = System.getProperty("os.name").toLowerCase();
-        if(os.contains("linux") || os.contains("unix"))
-        {
-            return new StringBuilder().append(s1).append("/.minecraft/").toString();
-        }
-        else if(os.contains("windows"))
-        {
-            String s2 = System.getenv("APPDATA");
-            if(s2 != null)
-            {
-            	return new StringBuilder().append(s2).append("/.minecraft/").toString();
-            } else
-            {
-            	return new StringBuilder().append(s1).append("/.minecraft/").toString();
-            }
-        }
-        else if (os.contains("mac"))
-        {
-            return s1+"Library/Application Support/minecraft/";
-        }
-        
-        else
-        {
-            return s1+"/minecraft/";
-        }
-	}
+	
 	
 	public static ZipEntry[][] readZip(ZipFile f) throws IOException
 	{
