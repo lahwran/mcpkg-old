@@ -121,7 +121,7 @@ public class CompareVersion {
 		
 		upstream = remaining;
 		
-		if(!upstream.matches("^[a-zA-Z0-9.+-:~]*$"))
+		if(!upstream.matches("^[a-zA-Z0-9.+_:~-]*$"))
 		{
 			throw new IllegalArgumentException("Invalid character in upstream version '"+upstream+"'");
 		}

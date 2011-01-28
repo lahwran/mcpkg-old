@@ -1,10 +1,25 @@
-#single-package metadata spec.
-#package index is generated automatically from the packages in the repo
-#and some extra metadata.
+#package info spec - for single package index files
 #blank lines are ignored. if a line starts with # it is a comment. to allow comments in names,
 #comments must be on their own lines.
 
+#format is:
+#Key: Value
+
+#some keys attach to blocks. 
+#in the blocks, a key will end the block, even if the key is invalid. 
+#keys may not contain spaces, and if there is a space in a line before a ': ', then it
+#will not be considered a key.
+#also, the special key Block is prepended to lines that are not ignored and have no key.
+#to force a line to be part of a block, give it the key Block:
+#for instance:
+#Description: example description
+#Block: more description
+#Block: even more description
+
 #name - Package names must consist only of lower case letters (a-z), digits (0-9), plus (+) and minus (-) signs, and periods (.). They must be at least two characters long and must start with an alphanumeric character.
+#actual functionality:
+#skip straight to "the user is alerted"
+#should have functionality:
 #when the name conflicts with the name from another repo, it is prefixed with the repository owner name. if it still conflicts, then the version is added. if it still conflicts, the user is alerted.
 Package: <PackageName>
 
@@ -21,19 +36,20 @@ Section: <A Name Goes Here>
 #----------------------------------------
 #version-specific information
 
-#MCVersion uses comparison format described below, packageversion is an arbitrary string.
-#uses order to determine which version is newer than which. use a period ('.') character
-#if this version has no mod version - for example the first release of modloader for a mcversion.
-#internally will assign number based on sort order.
+
+#MCVersion 
 #url must be direct - mediafire, for example, cannot be used for this. dropbox+bit.ly, however, can.
-Version: <MCVersionComparison> <PackageVersion> <PackageURL>
+Version: <MCVersion> <PackageVersion> <PackageURL>
 #all subfields are optional - if not included, assumed to be blank.
 
-Changelog: <changelog summary>
+#mutually exclusive with other Changelog fields
+SingleChangelog: <changelog summary>
 <optional multi-line changelong>
 
-#mutually exclusive with Changelog
-ChangelogUrl: <url to changelog text file>
+#mutually exclusive with other Changelog fields
+SingleChangelogUrl: <url to changelog text file>
+
+#changelog fields that allow to show changes from X version to latest will be added soon, hopefully before release
 
 #these two are just metadata, however are required if this package uses static block/item IDs.
 #dynamic block/item IDs are not recommended.
@@ -102,33 +118,17 @@ Provides: <PackageList>
 <= package version is at most
 >> package version is above
 << package version is below
-#will not automatically upgrade to latest version when version in repo is newer - instead, will offer to upgrade
+
 
 #versions are compared as specified by the debian version comparison algorithm:
 # http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 
+
+#will not automatically upgrade to latest version when version in repo is newer - instead, will offer to upgrade
+
+
 #end of version-specific information
 #----------------------------------------
 
-
 Description: <single line synopsis>
 <extended description over several lines>
-
-
-
-
-
-
-
-##################
-## example info ##
-##################
-
-Package: GuiAPI
-Author: lahwran<irc://irc.esper.net/lahwran>
-Section: libraries
-Version: 1.2<=x<1.3 0.9.5
-Description: API for modders to add Settings and Advanced GUIs
-allows modders to easily specify settings to save to file,
-as well as a way to do advanced guis using the TWL java widget library.
-
