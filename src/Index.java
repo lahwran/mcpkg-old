@@ -10,11 +10,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class Index {
 
-	public static String[] repos;
+	public static String[] mainrepos;
+	
 	
 	public static String getAppDir(String d)
 	{
@@ -105,17 +107,82 @@ public class Index {
 		return new String[]{"Block", whole};
 	}
 	
-	public static String[][] readRepoFromStream(BufferedReader in, String[] curKV)
+	public static boolean isin(String x, String[] y)
+	{
+		for (int i=0; i<y.length; i++)
+		{
+			if (x.equals(y[i]))
+				return true;
+		}
+		return false;
+	}
+	
+	public static String[][] readRepoFromStream(BufferedReader in, String[] curKV, boolean cansection, boolean cansubrepo)
 	{
 		ArrayList<String[]> fieldcache = new ArrayList<String[]>();
+		
+		HashMap<String, ArrayList<HashMap<String, String>>> loadeddata = new HashMap<String, ArrayList<HashMap<String, String>>>();
+		
+		HashMap<String, String> currentsection = null;
+		
+		String lastkey = null; //so we can append to last value with blocks
+		
+		final String[] SectionNames = new String [] {"Package", "Repository"};
+		
+		for(int i=0; i<SectionNames.length; i++)
+		{
+			loadeddata.put(SectionNames[i], new ArrayList<HashMap<String, String>>());
+		}
+		
 		while(curKV != null)
 		{
 			fieldcache.add(curKV);
 			
-			
+			if(isin(curKV[0], SectionNames))
+			{
+				currentsection = new HashMap<String, String>();
+				currentsection.put("Name", curKV[1]);
+				lastkey = "Name";
+				if(!loadeddata.containsKey(curKV[0]))
+				{
+					loadeddata.put(curKV[0], new ArrayList<HashMap<String, String>>());
+				}
+				loadeddata.get(curKV[0]).add(currentsection);
+			}
+			else if(curKV[0].equals("Block") && currentsection != null && lastkey != null)
+			{
+				currentsection.put(lastkey, currentsection.get(lastkey) + "\n" + curKV[1]);
+			}
+			else if(currentsection != null)
+			{
+				currentsection.put(curKV[0], curKV[1]);
+				lastkey = curKV[0];
+			}
 			
 			curKV = splitKV(getNextLine(in));
 		}
+		for(int i=0; i<SectionNames.length; i++)
+		{
+			System.out.println("section type "+SectionNames[i]);
+			ArrayList<HashMap<String, String>> sstype = loadeddata.get(SectionNames[i]);
+			for(int j=0; j<sstype.size(); j++)
+			{
+				currentsection = sstype.get(j);
+				System.out.println("\tsection "+currentsection.get("Name"));
+				String[] sectionkeys = currentsection.keySet().toArray(new String[0]); 
+				for(int k=0;k<sectionkeys.length;k++)
+				{
+					if(!sectionkeys[k].equalsIgnoreCase("Name"))
+					{
+						System.out.println("\t\t"+sectionkeys[k]+" "+currentsection.get(sectionkeys[k])+"\n\t\t\tendKV");
+					}
+				}
+				System.out.println("\tsectionend");
+			}
+			System.out.println("sectiontypeend");
+			
+		}
+		
 		return fieldcache.toArray(new String[0][]);
 	}
 	
@@ -148,7 +215,7 @@ public class Index {
 		
 	}
 	
-	public static void readrepo(String repourl)
+	public static void readrepo(String repourl, boolean cansection, boolean cansubrepo )
 	{
 		try {
 			String cachehash = MD5Checksum.strmd5(repourl);
@@ -174,12 +241,12 @@ public class Index {
 				String[] firstset = splitKV(getNextLine(f3));
 				if(firstset != null && firstset[0].equals("IndexVersion") && firstset[1].equals(inputLine[1]))
 				{
-					readRepoFromStream(f3, firstset);
+					readRepoFromStream(f3, firstset, cansection, cansubrepo);
 					return;
 				}
 			}
 
-			cacherepo(readRepoFromStream(in, inputLine), thiscache);
+			cacherepo(readRepoFromStream(in, inputLine, cansection, cansubrepo), thiscache);
 			
 			in.close();
 		} catch (IOException e) {
