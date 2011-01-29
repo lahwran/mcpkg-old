@@ -193,7 +193,7 @@ public class Index {
 			
 			OutputStreamWriter osw = new OutputStreamWriter(fo);
 			
-			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do file.write()??? I mean seriously? 
+			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
 			
 			for(int i=0; i< KVs.length;i++)
 			{

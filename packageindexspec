@@ -30,6 +30,7 @@ IndexVersion: <arbitrary string>
 Package: <PackageName>
 
 #Contact should be either an email or a url (such as an irc url) where modder can be contacted
+#must have at least one author line
 #can specify multiple Author lines when the package is a collaboration
 Author: Modder<Contact>
 

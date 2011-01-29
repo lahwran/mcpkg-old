@@ -1,8 +1,7 @@
 
 public class Package {
 	public String Name;
-	public String AuthorName;
-	public String AuthorContact;
+	public String[][] Authors;
 	public String Homepage;
 	public String Section;
 	public String MCVersion;

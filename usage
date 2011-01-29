@@ -1,0 +1,60 @@
+  #add and cache repo
+mcpkg addrepo <mainrepourl>
+
+  #delete repo, do not uncache
+mcpkg delrepo <repo #/url>
+
+  #shows list of repos in repo file, including line number in in repo file
+mcpkg listrepo
+  #synonymous with listrepo
+mcpkg listrepos 
+
+  #should have a better name - clear the repo cache
+mcpkg uncacherepos
+
+  #searches package names and descriptions for <string>
+  #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
+mcpkg search <string>
+
+  #list sections
+mcpkg sections
+  #list all modders and their contacts - this is why you put something in the contact that can withstand spam!
+mcpkg authors
+  #list of ALL packages and their short descriptions
+mcpkg packages
+
+  #dump packageinfo for package, plus whether the package is queued and whether the package is installed
+mcpkg show <packagename>
+
+  #show packages that can be upgraded
+mcpkg upgradeable
+
+  #clear all cached package files
+mcpkg clean
+
+  #clear any old (out of date) cached package files
+mcpkg autoclean
+
+  #show packages that are queued for install next time minecraft is started
+mcpkg queued
+
+  #show packages that are currently installed
+mcpkg installed
+
+  #queues package named to be installed next run. if it is not found in the repo, it is searched for as a file.
+#if found as a file, it is copied to package cache. 
+mcpkg queue <name/filename>
+
+  #remove package <name> from queue to install (effectively uninstalling it)
+mcpkg unqueue <name>
+
+  #run actual install - if --offline is provided run minecraft jar directly, without the launcher, and if --nostart is provided, do not launch minecraft.
+mcpkg run [--offline|--nostart]
+
+  #show order of packages to be installed, including number in order
+mcpkg order
+
+#move 
+mcpkg order <order number> (up|down)
+
+mcpkg order swap <order number> <order number>
