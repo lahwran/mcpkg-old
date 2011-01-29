@@ -47,7 +47,12 @@ mcpkg queue <name/filename>
 mcpkg unqueue <name>
 
   #run actual install - if --offline is provided run minecraft jar directly, without the launcher, and if --nostart is provided, do not launch minecraft.
+  #checks minecraft update system to see if a new version is out, 
+  #if .minecraft contains an unmodded minecraft that is newer than the latest backup, backs it up.
+  #then builds a new modded minecraft based on queued packages and latest backup.
 mcpkg run [--offline|--nostart]
+
+  
 
   #show order of packages to be installed, including number in order
 mcpkg order
@@ -56,3 +61,14 @@ mcpkg order
 mcpkg order <order number> (up|down)
 
 mcpkg order swap <order number> <order number>
+
+
+
+
+  #list backups made
+
+  #create a backup - main means everything but saves
+  #to add later - manual for now
+#mcpkg backup list
+#mcpkg backup create (all|saves|main)
+#mcpkg backup restore [saves|main] 

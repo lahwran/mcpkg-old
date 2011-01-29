@@ -44,7 +44,6 @@ Section: <A Name Goes Here>
 #version-specific information
 
 
-#MCVersion 
 #url must be direct - mediafire, for example, cannot be used for this. dropbox+bit.ly, however, can.
 Version: <MCVersion> <PackageVersion> <PackageURL>
 #all subfields are optional - if not included, assumed to be blank.
@@ -53,15 +52,12 @@ Version: <MCVersion> <PackageVersion> <PackageURL>
 SingleChangelog: <changelog summary>
 <optional multi-line changelong>
 
-#mutually exclusive with other Changelog fields
-SingleChangelogUrl: <url to changelog text file>
-
 #changelog fields that allow to show changes from X version to latest will be added soon, hopefully before release
 
 #these two are just metadata, however are required if this package uses static block/item IDs.
 #dynamic block/item IDs are not recommended.
 ItemIDs: <IDList>
-BlockIDs:
+BlockIDs: <IDList>
 
 #<IDList> format:
 a,b,c,d...

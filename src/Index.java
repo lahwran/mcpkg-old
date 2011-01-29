@@ -12,6 +12,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+//currently searches online repos EVERY time is loaded; maybe only search every 10 minutes?
 
 public class Index {
 
@@ -121,9 +122,9 @@ public class Index {
 	{
 		ArrayList<String[]> fieldcache = new ArrayList<String[]>();
 		
-		HashMap<String, ArrayList<HashMap<String, String>>> loadeddata = new HashMap<String, ArrayList<HashMap<String, String>>>();
+		HashMap<String, ArrayList<HashMap<String, ArrayList<String>>>> loadeddata = new HashMap<String, ArrayList<HashMap<String, ArrayList<String>>>>();
 		
-		HashMap<String, String> currentsection = null;
+		HashMap<String, ArrayList<String>> currentsection = null;
 		
 		String lastkey = null; //so we can append to last value with blocks
 		
@@ -131,7 +132,7 @@ public class Index {
 		
 		for(int i=0; i<SectionNames.length; i++)
 		{
-			loadeddata.put(SectionNames[i], new ArrayList<HashMap<String, String>>());
+			loadeddata.put(SectionNames[i], new ArrayList<HashMap<String, ArrayList<String>>>());
 		}
 		
 		while(curKV != null)
@@ -140,41 +141,57 @@ public class Index {
 			
 			if(isin(curKV[0], SectionNames))
 			{
-				currentsection = new HashMap<String, String>();
-				currentsection.put("Name", curKV[1]);
+				currentsection = new HashMap<String, ArrayList<String>>();
+				ArrayList<String> curV = new ArrayList<String>();
+				curV.add(curKV[1]);
+				currentsection.put("Name", curV);
 				lastkey = "Name";
 				if(!loadeddata.containsKey(curKV[0]))
 				{
-					loadeddata.put(curKV[0], new ArrayList<HashMap<String, String>>());
+					loadeddata.put(curKV[0], new ArrayList<HashMap<String, ArrayList<String>>>());
 				}
 				loadeddata.get(curKV[0]).add(currentsection);
 			}
 			else if(curKV[0].equals("Block") && currentsection != null && lastkey != null)
 			{
-				currentsection.put(lastkey, currentsection.get(lastkey) + "\n" + curKV[1]);
+				ArrayList<String> lastVs = currentsection.get(lastkey);
+				String lastV = lastVs.get(lastVs.size()-1) + "\n" + curKV[1];
+				lastVs.remove(lastVs.size()-1);
+				lastVs.add(lastV);
+			}
+			else if(currentsection != null && !currentsection.containsKey(curKV[0]))
+			{
+				ArrayList<String> curV = new ArrayList<String>();
+				curV.add(curKV[1]);
+				currentsection.put(curKV[0], curV);
+				lastkey = curKV[0];
 			}
 			else if(currentsection != null)
 			{
-				currentsection.put(curKV[0], curKV[1]);
-				lastkey = curKV[0];
+				ArrayList<String> lastVs = currentsection.get(lastkey);
+				lastVs.add(curKV[1]);
 			}
 			
 			curKV = splitKV(getNextLine(in));
 		}
+		/*
 		for(int i=0; i<SectionNames.length; i++)
 		{
 			System.out.println("section type "+SectionNames[i]);
-			ArrayList<HashMap<String, String>> sstype = loadeddata.get(SectionNames[i]);
+			ArrayList<HashMap<String, ArrayList<String>>> sstype = loadeddata.get(SectionNames[i]);
 			for(int j=0; j<sstype.size(); j++)
 			{
 				currentsection = sstype.get(j);
-				System.out.println("\tsection "+currentsection.get("Name"));
+				System.out.println("\tsection "+currentsection.get("Name").get(0));
 				String[] sectionkeys = currentsection.keySet().toArray(new String[0]); 
 				for(int k=0;k<sectionkeys.length;k++)
 				{
+					System.out.println("\t\tkey: "+sectionkeys[k]);
 					if(!sectionkeys[k].equalsIgnoreCase("Name"))
 					{
-						System.out.println("\t\t"+sectionkeys[k]+" "+currentsection.get(sectionkeys[k])+"\n\t\t\tendKV");
+						ArrayList<String> curV = currentsection.get(sectionkeys[k]);
+						for(int l=0; l<curV.size(); l++)
+							System.out.println("\t\t\t"+curV.get(l)+"\n\t\t\t\tendV");
 					}
 				}
 				System.out.println("\tsectionend");
@@ -182,8 +199,89 @@ public class Index {
 			System.out.println("sectiontypeend");
 			
 		}
+		//*/
+		///*
+		ArrayList<HashMap<String, ArrayList<String>>> Packages = loadeddata.get("Package");
+		for(int i=0; i<Packages.size(); i++)
+		{
+			//java.lang.IndexOutOfBoundsException
+			HashMap<String, ArrayList<String>> pdata = Packages.get(i);
+			Package p = new Package(pdata.get("Name").get(0));
+			ArrayList<String> dataauthors = pdata.get("Author");
+			String[] temp = dataauthors.get(0).split("[<>]");
+			ArrayList<String[]> authors = new ArrayList<String[]>();
+			authors.add(new String[] {temp[0], temp[1]});
+			for(int j=1; j<dataauthors.size(); j++)
+			{
+				temp = dataauthors.get(i).split("[<>]");
+				authors.add(new String[] {temp[0], temp[1]});
+			}
+			p.Authors=authors.toArray(new String[0][]);
+			
+			if(pdata.containsKey("Homepage"))
+				p.Homepage = pdata.get("Homepage").get(0);
+			
+			String section = pdata.get("Section").get(0);
+			//check section validity here
+			p.Section = section;
+			
+			String[] Versions = pdata.get("Version").get(0).split(" ", 3);
+			
+			p.PackageURL = Versions[2];
+			p.Version = Versions[1];
+			p.MCVersion = Versions[0];
+			
+			if(pdata.containsKey("SingleChangelog"))
+				p.Homepage = pdata.get("SingleChangelog").get(0);
+			
+			if(pdata.containsKey("ItemIDs"))
+			{
+				temp = pdata.get("ItemIDs").get(0).split(",");
+				p.ItemIDs = new int[temp.length];
+				for(int j=0; j<temp.length; j++)
+				{
+					p.ItemIDs[j]= new Integer(temp[j]);
+				}
+			}
+			if(pdata.containsKey("BlockIDs"))
+			{
+				temp = pdata.get("BlockIDs").get(0).split(",");
+				p.BlockIDs = new int[temp.length];
+				for(int j=0; j<temp.length; j++)
+				{
+					p.BlockIDs[j]= new Integer(temp[j]);
+				}
+			}
+			p.Depends = PackageList(pdata.get("Depends").get(0));
+			p.InstallBefore = PackageList(pdata.get("InstallBefore").get(0));
+			p.InstallAfter = PackageList(pdata.get("InstallAfter").get(0));
+			p.Recommends = PackageList(pdata.get("Recommends").get(0));
+			p.Suggests = PackageList(pdata.get("Suggests").get(0));
+			p.Enhances = PackageList(pdata.get("Enhances").get(0));
+			p.Conflicts = PackageList(pdata.get("Conflicts").get(0));
+			p.Provides = PackageList(pdata.get("Provides").get(0));
+			
+			p.FullDescription = pdata.get("Description").get(0);
+			p.ShortDescription = p.FullDescription.indexOf("\n") != -1 ? p.FullDescription.substring(0, p.FullDescription.indexOf("\n")) : "";
+		}
 		
+		//*/
 		return fieldcache.toArray(new String[0][]);
+	}
+	
+	public static PackageCompare[] PackageList(String list)
+	{
+		ArrayList<PackageCompare> comparers = new ArrayList<PackageCompare>();
+		if(list == null)
+			return new PackageCompare[0];
+		String[] comparisons = list.split(", ");
+		
+		for(int i=0; i<comparisons.length; i++)
+		{
+			comparers.add(new PackageCompare(comparisons[i]));
+		}
+		
+		return comparers.toArray(new PackageCompare[0]);
 	}
 	
 	public static void cacherepo(String[][] KVs, File output)
@@ -256,7 +354,10 @@ public class Index {
 	
 	public static void readrepos()
 	{
-		
+		for(int i=0; i<mainrepos.length; i++)
+		{
+			readrepo(mainrepos[i], true, true);
+		}
 	}
 	
 	public static void main(String[] args)

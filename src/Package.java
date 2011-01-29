@@ -1,3 +1,5 @@
+import java.util.HashMap;
+
 
 public class Package {
 	public String Name;
@@ -23,5 +25,13 @@ public class Package {
 	
 	public String FullDescription;
 	public String ShortDescription;
+	
+	public static HashMap<String, Package> Packages = new HashMap<String, Package>();
+	
+	public Package(String _name)
+	{
+		Packages.put(_name, this);
+		Name = _name;
+	}
 	
 }
