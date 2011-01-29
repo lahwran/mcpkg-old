@@ -5,29 +5,27 @@ mcpkg addrepo <mainrepourl>
 mcpkg delrepo <repo #/url>
 
   #shows list of repos in repo file, including line number in in repo file
-mcpkg listrepo
-  #synonymous with listrepo
-mcpkg listrepos 
+mcpkg list repos
 
   #should have a better name - clear the repo cache
-mcpkg uncacherepos
+mcpkg cleanrepos
 
   #searches package names and descriptions for <string>
   #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
 mcpkg search <string>
 
   #list sections
-mcpkg sections
+mcpkg list sections
   #list all modders and their contacts - this is why you put something in the contact that can withstand spam!
-mcpkg authors
+mcpkg list authors
   #list of ALL packages and their short descriptions
-mcpkg packages
+mcpkg list packages
 
   #dump packageinfo for package, plus whether the package is queued and whether the package is installed
 mcpkg show <packagename>
 
   #show packages that can be upgraded
-mcpkg upgradeable
+mcpkg list upgrades
 
   #clear all cached package files
 mcpkg clean
