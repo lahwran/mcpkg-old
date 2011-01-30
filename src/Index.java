@@ -17,6 +17,7 @@ import java.util.HashMap;
 public class Index {
 
 	public static String[] mainrepos;
+	public static final String defaultrepo = "file:///home/blendmaster/workspace/Patcher/testindex";
 	
 	
 	public static String getAppDir(String d)
@@ -252,14 +253,14 @@ public class Index {
 					p.BlockIDs[j]= new Integer(temp[j]);
 				}
 			}
-			p.Depends = PackageList(pdata.get("Depends").get(0));
-			p.InstallBefore = PackageList(pdata.get("InstallBefore").get(0));
-			p.InstallAfter = PackageList(pdata.get("InstallAfter").get(0));
-			p.Recommends = PackageList(pdata.get("Recommends").get(0));
-			p.Suggests = PackageList(pdata.get("Suggests").get(0));
-			p.Enhances = PackageList(pdata.get("Enhances").get(0));
-			p.Conflicts = PackageList(pdata.get("Conflicts").get(0));
-			p.Provides = PackageList(pdata.get("Provides").get(0));
+			p.Depends = PackageList(pdata.get("Depends"));
+			p.InstallBefore = PackageList(pdata.get("InstallBefore"));
+			p.InstallAfter = PackageList(pdata.get("InstallAfter"));
+			p.Recommends = PackageList(pdata.get("Recommends"));
+			p.Suggests = PackageList(pdata.get("Suggests"));
+			p.Enhances = PackageList(pdata.get("Enhances"));
+			p.Conflicts = PackageList(pdata.get("Conflicts"));
+			p.Provides = PackageList(pdata.get("Provides"));
 			
 			p.FullDescription = pdata.get("Description").get(0);
 			p.ShortDescription = p.FullDescription.indexOf("\n") != -1 ? p.FullDescription.substring(0, p.FullDescription.indexOf("\n")) : "";
@@ -269,8 +270,11 @@ public class Index {
 		return fieldcache.toArray(new String[0][]);
 	}
 	
-	public static PackageCompare[] PackageList(String list)
+	public static PackageCompare[] PackageList(ArrayList<String> _list)
 	{
+		if(_list == null)
+			return null;
+		String list = _list.get(0);
 		ArrayList<PackageCompare> comparers = new ArrayList<PackageCompare>();
 		if(list == null)
 			return new PackageCompare[0];
@@ -313,8 +317,8 @@ public class Index {
 		
 	}
 	
-	public static void readrepo(String repourl, boolean cansection, boolean cansubrepo )
-	{
+	public static void loadrepo(String repourl, boolean cansection, boolean cansubrepo )
+	{ //TODO: will be slow as hell when there is no connection or 404 or such ..
 		try {
 			String cachehash = MD5Checksum.strmd5(repourl);
 			
@@ -352,11 +356,84 @@ public class Index {
 		}
 	}
 	
-	public static void readrepos()
+	public static void loadrepos()
 	{
+		readrepolist();
+		//TODO: needs some kind of rate limiting .. don't check more often than every 10 minutes or something 
 		for(int i=0; i<mainrepos.length; i++)
 		{
-			readrepo(mainrepos[i], true, true);
+			loadrepo(mainrepos[i], true, true);
+		}
+	}
+	public static String repolisthash = "";
+	public static void readrepolist()
+	{
+		File appdir = new File(getAppDir("mcpkg")+"/");
+		appdir.mkdirs();//won't do anything if it's not needed
+		File repolist = new File(appdir,"repos.lst");
+		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
+		FileInputStream f1 = null;
+		//String currepolisthash = null;
+		try {
+			f1 = new FileInputStream(repolist); //TODO: can't we just seek to beginning?
+			//currepolisthash = MD5Checksum.make(new FileInputStream(repolist));
+		} catch (FileNotFoundException e) {
+			initrepolistfile();
+			
+			return;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//wait, how is this method of hashing more efficient than doing the normal loading in?
+		/*
+		if(repolisthash.equals(currepolisthash))
+			return;
+		repolisthash=currepolisthash;*/
+		InputStreamReader f2 = new InputStreamReader(f1);
+		BufferedReader f3 = new BufferedReader(f2);
+		
+		ArrayList<String> listbuilder = new ArrayList<String>(); 
+		
+		try {
+			String line = null;
+			while ((line = getNextLine(f3)) != null)
+			{
+				listbuilder.add(line);
+			}
+			
+			f3.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		mainrepos = listbuilder.toArray(new String[0]);
+		//should check for old default repos
+	}
+	
+	public static void initrepolistfile()
+	{
+		try {
+			File appdir = new File(getAppDir("mcpkg")+"/");
+			appdir.mkdirs();//won't do anything if it's not needed
+			File repolist = new File(appdir,"repos.lst");
+			
+			FileOutputStream fo = new FileOutputStream(repolist);
+			
+			OutputStreamWriter osw = new OutputStreamWriter(fo);
+			
+			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+			
+			writer.write("#default repository\n"+defaultrepo);
+			
+			writer.close();
+			mainrepos = new String[]{defaultrepo};
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	

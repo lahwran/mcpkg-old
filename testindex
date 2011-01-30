@@ -1,17 +1,3 @@
-
-Test: A
-this is a block
-this is also a block
-
-#this is a comment
-#faaail
- #this is part of a block
- as is: this
-Block: And: this
-
-
-This: is not a block
-
 #################
 ##example index##
 #################
@@ -23,7 +9,7 @@ Author: lahwran3<irc://irc.esper4.net/lahwran>
 Section: libraries
 
 Version: 1.2_02 0.9.5 [directurl]
-Depends: Modloader:1.2<=x<1.3/>=^
+Depends: Modloader>=.
 
 Description: API for modders to add Settings and Advanced GUIs
 allows modders to easily specify settings to save to file,
@@ -31,7 +17,7 @@ as well as a way to do advanced guis using the TWL java widget library.
 
 
 Package: IngameInvedit
-Author: lahwran!blendmaster1024@gmail.com
+Author: lahwran3<irc://irc.esper4.net/lahwran>
 Section: Cheats/Testing tools
 
 Version: 1.2_02 . [directurl]

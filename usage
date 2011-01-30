@@ -1,18 +1,17 @@
+
+  #searches package names and descriptions for <string>
+  #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
+mcpkg search <string>
   #add and cache repo
 mcpkg addrepo <mainrepourl>
 
   #delete repo, do not uncache
 mcpkg delrepo <repo #/url>
 
+
   #shows list of repos in repo file, including line number in in repo file
 mcpkg list repos
 
-  #should have a better name - clear the repo cache
-mcpkg cleanrepos
-
-  #searches package names and descriptions for <string>
-  #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
-mcpkg search <string>
 
   #list sections
 mcpkg list sections
@@ -27,11 +26,15 @@ mcpkg show <packagename>
   #show packages that can be upgraded
 mcpkg list upgrades
 
+  #clear the repo cache
+mcpkg clean repos
+
+mcpkg clean packages
+  #clear any old (out of date) cached package files
+mcpkg clean oldpackages
   #clear all cached package files
 mcpkg clean
 
-  #clear any old (out of date) cached package files
-mcpkg autoclean
 
   #show packages that are queued for install next time minecraft is started
 mcpkg queued
