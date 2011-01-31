@@ -19,80 +19,7 @@ public class Index {
 	public static String[] mainrepos;
 	public static final String defaultrepo = "file:///home/blendmaster/workspace/Patcher/testindex";
 	
-	
-	public static String getAppDir(String d)
-	{
-		String s1 = System.getProperty("user.home", ".");
-		String os = System.getProperty("os.name").toLowerCase();
-        if(os.contains("linux") || os.contains("unix"))
-        {
-            return new StringBuilder().append(s1).append("/."+d+"/").toString();
-        }
-        else if(os.contains("windows"))
-        {
-            String s2 = System.getenv("APPDATA");
-            if(s2 != null)
-            {
-            	return new StringBuilder().append(s2).append("/."+d+"/").toString();
-            } else
-            {
-            	return new StringBuilder().append(s1).append("/."+d+"/").toString();
-            }
-        }
-        else if (os.contains("mac"))
-        {
-            return s1+"Library/Application Support/"+d+"/";
-        }
-        
-        else
-        {
-            return s1+"/"+d+"/";
-        }
-	}
-	
-	public static String[] getRepolist()
-	{
-		ArrayList<String> repolist = new ArrayList<String>();
-		BufferedReader inputStream;
-		try {
-			inputStream = new BufferedReader(new FileReader("repos.lst"));
-		
-			String l = "";
-			while((l = inputStream.readLine()) != null)
-			{
-				if(!l.matches("^#") && !l.matches("^$"))
-				{
-					repolist.add(l);
-				}
-			}
-			inputStream.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return repolist.toArray(new String[0]);
-	}
-	
-	public static String getNextLine(BufferedReader in) //eats comment and blank lines
-	{
-		String r=null;
-		try {
-			while((r = in.readLine()) != null)
-			{
-				if(!r.startsWith("#") && !r.equals(""))
-				{
-					return r;
-				}
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
+	public static HashMap<String, String> Sections = new HashMap<String, String>();
 	
 	public static String[] splitKV(String whole)
 	{
@@ -129,7 +56,7 @@ public class Index {
 		
 		String lastkey = null; //so we can append to last value with blocks
 		
-		final String[] SectionNames = new String [] {"Package", "Repository"};
+		final String[] SectionNames = new String [] {"Package", "Repository", "Section"};
 		
 		for(int i=0; i<SectionNames.length; i++)
 		{
@@ -173,7 +100,7 @@ public class Index {
 				lastVs.add(curKV[1]);
 			}
 			
-			curKV = splitKV(getNextLine(in));
+			curKV = splitKV(Util.getNextLine(in));
 		}
 		/*
 		for(int i=0; i<SectionNames.length; i++)
@@ -202,6 +129,18 @@ public class Index {
 		}
 		//*/
 		///*
+		//icky name is icky
+		ArrayList<HashMap<String, ArrayList<String>>> Sectionsarr = loadeddata.get("Section");
+		for(int i=0; i<Sectionsarr.size(); i++)
+		{
+			HashMap<String, ArrayList<String>> sdata = Sectionsarr.get(i);
+			if((!Sections.containsKey(sdata.get("Name").get(0))) && (sdata.get("Description")!=null))
+				Sections.put(sdata.get("Name").get(0),sdata.get("Description").get(0));
+			else if(!Sections.containsKey(sdata.get("Name").get(0)))
+				Sections.put(sdata.get("Name").get(0),null);
+			//else
+			//	throw new IllegalArgumentException("tried to add duplicate section "+sdata.get("Name").get(0));
+		}
 		ArrayList<HashMap<String, ArrayList<String>>> Packages = loadeddata.get("Package");
 		for(int i=0; i<Packages.size(); i++)
 		{
@@ -222,8 +161,15 @@ public class Index {
 			if(pdata.containsKey("Homepage"))
 				p.Homepage = pdata.get("Homepage").get(0);
 			
-			String section = pdata.get("Section").get(0);
-			//check section validity here
+			String section = null;
+			try{
+				section = pdata.get("PackageSection").get(0);
+			}catch (NullPointerException e) {
+				//let's add some context, yes?
+				throw new IllegalArgumentException("package "+p.Name+" missing PackageSection field");
+			}
+			if (!Sections.containsKey(section))
+				throw new IllegalArgumentException("undeclared section "+section+" while reading package "+p.Name);
 			p.Section = section;
 			
 			String[] Versions = pdata.get("Version").get(0).split(" ", 3);
@@ -265,7 +211,6 @@ public class Index {
 			p.FullDescription = pdata.get("Description").get(0);
 			p.ShortDescription = p.FullDescription.indexOf("\n") != -1 ? p.FullDescription.substring(0, p.FullDescription.indexOf("\n")) : "";
 		}
-		
 		//*/
 		return fieldcache.toArray(new String[0][]);
 	}
@@ -322,7 +267,7 @@ public class Index {
 		try {
 			String cachehash = MD5Checksum.strmd5(repourl);
 			
-			File cache = new File(getAppDir("mcpkg")+"/repocache/");
+			File cache = new File(Util.getAppDir("mcpkg")+"/repocache/");
 			cache.mkdirs();//won't do anything if it's not needed
 			File thiscache = new File(cache,cachehash);
 			
@@ -333,14 +278,14 @@ public class Index {
 			in = new BufferedReader(new InputStreamReader(reporeader.openStream()));
 		
 
-			String[] inputLine = splitKV(getNextLine(in));
+			String[] inputLine = splitKV(Util.getNextLine(in));
 			if(inputLine != null && inputLine[0].equals("IndexVersion") && thiscache.exists())
 			{
 				//check cached copy; if it's IndexVersion matches just-read indexversion, no need to update it
 				FileInputStream f1 = new FileInputStream(thiscache);
 				InputStreamReader f2 = new InputStreamReader(f1);
 				BufferedReader f3 = new BufferedReader(f2);
-				String[] firstset = splitKV(getNextLine(f3));
+				String[] firstset = splitKV(Util.getNextLine(f3));
 				if(firstset != null && firstset[0].equals("IndexVersion") && firstset[1].equals(inputLine[1]))
 				{
 					readRepoFromStream(f3, firstset, cansection, cansubrepo);
@@ -368,7 +313,7 @@ public class Index {
 	public static String repolisthash = "";
 	public static void readrepolist()
 	{
-		File appdir = new File(getAppDir("mcpkg")+"/");
+		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		appdir.mkdirs();//won't do anything if it's not needed
 		File repolist = new File(appdir,"repos.lst");
 		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
@@ -397,7 +342,7 @@ public class Index {
 		
 		try {
 			String line = null;
-			while ((line = getNextLine(f3)) != null)
+			while ((line = Util.getNextLine(f3)) != null)
 			{
 				listbuilder.add(line);
 			}
@@ -413,7 +358,7 @@ public class Index {
 	public static void initrepolistfile()
 	{
 		try {
-			File appdir = new File(getAppDir("mcpkg")+"/");
+			File appdir = new File(Util.getAppDir("mcpkg")+"/");
 			appdir.mkdirs();//won't do anything if it's not needed
 			File repolist = new File(appdir,"repos.lst");
 			

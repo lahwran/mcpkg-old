@@ -1,5 +1,6 @@
 #package repository index spec.
 #blank lines are ignored. if a line starts with # it is a comment. to allow comments in names,
+#note that blank lines and comments are ignored in multi-line blocks as well! however, a line with a single space will not be ignored.
 #comments must be on their own lines.
 
 #format is:
@@ -38,7 +39,8 @@ Author: Modder<Contact>
 Homepage: <URL>
 
 #Section to file this package under. may only be a section name declared in a repository list which has the permission to do so.
-Section: <A Name Goes Here>
+#changed to PackageSection to accomodate Section block
+PackageSection: <A Name Goes Here>
 
 #----------------------------------------
 #version-specific information
@@ -114,6 +116,12 @@ Provides: <PackageList>
 <PackageName>[comparison]<Package Version>
 #will assume the MC Version Comparison used on your mod
 
+#or i just:
+<PackageName>
+#for if you just want the latest version
+
+
+
 #Version Comparison format:
 == package version equals
 != package version does not equal
@@ -152,38 +160,11 @@ Description: <single line synopsis>
 <extended description over several lines>
 
 
-#sections - list of sections this repo adds. 
-Sections: Mobs,Items,
+#sections - same rules as for a package name apply for section names.
+#description is optional - will only be used for tooltips and such anyway 
+Section: Mobs
+Description: Mods that add or modify mobs
 
 
-#################
-##example index##
-#################
-
-Package: GuiAPI
-Author: lahwran<irc://irc.esper.net/lahwran>
-Section: libraries
-
-Version: 1.2_02 0.9.5 [directurl]
-Depends: Modloader:1.2<=x<1.3/>=^
-
-Description: API for modders to add Settings and Advanced GUIs
-allows modders to easily specify settings to save to file,
-as well as a way to do advanced guis using the TWL java widget library.
-
-
-Package: IngameInvedit
-Author: lahwran!blendmaster1024@gmail.com
-Section: Cheats/Testing tools
-
-Version: 1.2_02 . [directurl]
-
-Description: ingame inventory editor that shows list of items down the side.
-features detection of mod-added blocks.
-
-
-Repository: TLUL's Mods
-Owner: TLUL
-Index: [urlhere]
-FollowSubrepos: true
-Description: TLUL's Mod Repository
+Section: Cheats
+Description: some descriptive shit here

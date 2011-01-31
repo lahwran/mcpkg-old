@@ -6,7 +6,7 @@ Package: GuiAPI
 Author: lahwran<irc://irc.esper.net/lahwran>
 Author: lahwran2<irc://irc.esper.n6et/lahwran>
 Author: lahwran3<irc://irc.esper4.net/lahwran>
-Section: libraries
+PackageSection: libraries
 
 Version: 1.2_02 0.9.5 [directurl]
 Depends: Modloader>=.
@@ -18,12 +18,13 @@ as well as a way to do advanced guis using the TWL java widget library.
 
 Package: IngameInvedit
 Author: lahwran3<irc://irc.esper4.net/lahwran>
-Section: Cheats/Testing tools
+PackageSection: creative tools
 
 Version: 1.2_02 . [directurl]
 
 Description: ingame inventory editor that shows list of items down the side.
 features detection of mod-added blocks.
+requires GuiAPI.
 
 
 Repository: TLUL's Mods
@@ -33,3 +34,6 @@ FollowSubrepos: true
 Description: TLUL's Mod Repository
 
 this is a fail
+
+Section: libraries
+Section: creative tools

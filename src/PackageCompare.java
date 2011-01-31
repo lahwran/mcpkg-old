@@ -1,5 +1,7 @@
+import java.util.Comparator;
 
-public class PackageCompare {
+
+public class PackageCompare implements Comparator<Package> {
 	
 	//these are kinda premature optimization ...
 	public static final int equals = 0;
@@ -8,48 +10,53 @@ public class PackageCompare {
 	public static final int atmost = 3;
 	public static final int above = 4;
 	public static final int below = 5;
+	public static final int nocomparison = 6;
 	
-	public int comparison;
-	public String version;
+	public int comparison=nocomparison;
+	public String version=null;
 	public String name;
 	
 	public PackageCompare(String compstring)
 	{
 		if(!compstring.matches("^[^=>!<]*[=>!<][=><][^=>!<]*$"))
 		{
-			throw new IllegalArgumentException("invalid comparison string '"+compstring+"'");
+			name = compstring;
+			//throw new IllegalArgumentException("invalid comparison string '"+compstring+"'");
 		}
-		if(compstring.matches("^.*[=][=].*$"))
+		else
 		{
-			comparison=equals;
+			if(compstring.matches("^.*[=][=].*$"))
+			{
+				comparison=equals;
+			}
+			else if(compstring.matches("^.*[!][=].*$"))
+			{
+				comparison=notequals;
+			}
+			else if(compstring.matches("^.*[>][=].*$"))
+			{
+				comparison=atleast;
+			}
+			else if(compstring.matches("^.*[<][=].*$"))
+			{
+				comparison=atmost;
+			}
+			else if(compstring.matches("^.*[>][>].*$"))
+			{
+				comparison=above;
+			}
+			else if(compstring.matches("^.*[<][<].*$"))
+			{
+				comparison=below;
+			}
+			String[] x=compstring.split("[=>!<][=>!<]");
+			if(x.length != 2)
+			{
+				throw new IllegalArgumentException("invalid comparison string (needs to split to two) '"+compstring+"'");
+			}
+			name=x[0];
+			version=x[1];
 		}
-		else if(compstring.matches("^.*[!][=].*$"))
-		{
-			comparison=notequals;
-		}
-		else if(compstring.matches("^.*[>][=].*$"))
-		{
-			comparison=atleast;
-		}
-		else if(compstring.matches("^.*[<][=].*$"))
-		{
-			comparison=atmost;
-		}
-		else if(compstring.matches("^.*[>][>].*$"))
-		{
-			comparison=above;
-		}
-		else if(compstring.matches("^.*[<][<].*$"))
-		{
-			comparison=below;
-		}
-		String[] x=compstring.split("[=>!<][=>!<]");
-		if(x.length != 2)
-		{
-			throw new IllegalArgumentException("invalid comparison string (needs to split to two) '"+compstring+"'");
-		}
-		name=x[0];
-		version=x[1];
 	}
 	public PackageCompare(String name, String comparison, String version)
 	{
@@ -78,7 +85,7 @@ public class PackageCompare {
 		else if(comparison.equals("<<"))
 			compnum = below;
 		else
-			throw new IllegalArgumentException("invalid comparison: "+comparison);
+			throw new IllegalArgumentException("invalid comparison: "+comparison+" - how the shit did you make this happen, anyway?");
 		return compnum;
 	}
 	
@@ -91,6 +98,8 @@ public class PackageCompare {
 	{
 		if(!pkgname.equals(name))
 			return false;
+		else if(comparison == nocomparison)
+			return true;
 		
 		//1 means A > B, -1 means A < B
 		int res = CompareVersion.compare(pkgversion, version);
@@ -111,6 +120,11 @@ public class PackageCompare {
 		default:
 			throw new IllegalArgumentException("invalid comparison number "+comparison);
 		}
+	}
+	@Override
+	public int compare(Package arg0, Package arg1) {
+		// TODO Auto-generated method stub
+		return CompareVersion.compare(arg0.Version, arg1.Version);
 	}
 	
 }

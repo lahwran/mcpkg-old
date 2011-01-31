@@ -1,24 +1,36 @@
+#all commands that do anything need to have a
+#--noop that doesn't call the actual action commands, and a way to
+#show the user what it's about to do, probably as an integer to the
+#command function - 0 = go, 1 = get information to show user, 2 = pretend to go
+#1 and 2 may be similar enough to just drop to a boolean 'doanything'
+#anyway they must return what they will clean/install/do/etc 
+#so that the interface can display to the user what is about to happen, before
+#the user confirms that this is what they want to happen
+#so that if it's going to install virus 2.0, the user will see this and be able to hit cancel
+#possibly some exemptions could be made such as the addrepo command probably doesn't need a confirm 
+
+#package comparer should ignore version if comparison is missing
 
   #searches package names and descriptions for <string>
   #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
-mcpkg search <string>
+mcpkg search <string> [--section=X] [--author=X] #command - missing filters
   #add and cache repo
-mcpkg addrepo <mainrepourl>
+mcpkg addrepo <mainrepourl> #command
 
   #delete repo, do not uncache
-mcpkg delrepo <repo #/url>
+mcpkg delrepo <repo #/url> #command
 
 
   #shows list of repos in repo file, including line number in in repo file
-mcpkg list repos
+mcpkg list repos #command
 
 
   #list sections
-mcpkg list sections
+mcpkg list sections #command
   #list all modders and their contacts - this is why you put something in the contact that can withstand spam!
-mcpkg list authors
+mcpkg list authors 
   #list of ALL packages and their short descriptions
-mcpkg list packages
+mcpkg list packages #command
 
   #dump packageinfo for package, plus whether the package is queued and whether the package is installed
 mcpkg show <packagename>
@@ -27,7 +39,7 @@ mcpkg show <packagename>
 mcpkg list upgrades
 
   #clear the repo cache
-mcpkg clean repos
+mcpkg clean repos #command
 
 mcpkg clean packages
   #clear any old (out of date) cached package files
@@ -65,8 +77,14 @@ mcpkg order <order number> (up|down)
 
 mcpkg order swap <order number> <order number>
 
+#not planned what the format will be that this takes as input
+mcpkg create <inputzip/inputdir> <outputzip>
 
+#should also be able to use the patcher directly
 
+#should have repository index creation commands, for modders
+#but can only be used from command line, or from a special prompt 
+#that allows commands to be entered in the gui that are then processed as commandline thingys
 
   #list backups made
 

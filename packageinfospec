@@ -1,3 +1,14 @@
+##################################
+#                                #
+#    I HARDLY TOUCH THIS FILE    #
+#                                #
+#     DO NOT ASSUME IT IS UP     #
+#   TO DATE WITH THE INDEX SPEC  #
+#                                #
+##################################
+
+
+
 #package info spec - for single package index files
 #blank lines are ignored. if a line starts with # it is a comment. to allow comments in names,
 #comments must be on their own lines.
