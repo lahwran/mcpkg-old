@@ -124,6 +124,14 @@ public class PackageCompare implements Comparator<Package> {
 	@Override
 	public int compare(Package arg0, Package arg1) {
 		// TODO Auto-generated method stub
+		return scompare(arg0, arg1);
+	}
+	
+	public static int scompare(Package arg0, Package arg1) //scompare - static compare, because it's retarded to initialize an object
+	{
+		int mc=CompareVersion.compare(arg0.MCVersion, arg1.MCVersion);
+		if(mc != 0)
+			return mc;
 		return CompareVersion.compare(arg0.Version, arg1.Version);
 	}
 	

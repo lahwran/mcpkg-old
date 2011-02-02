@@ -11,6 +11,9 @@
 
 #package comparer should ignore version if comparison is missing
 
+#minecraft is treated like a package - when there is an upgrade available on manager launch, the version file is updated, and upgrade is offered.
+#the package manager then loads up the minecraft version from the jars.
+
   #searches package names and descriptions for <string>
   #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
 mcpkg search <string> [--section=X] [--author=X] #command - missing filters
@@ -32,19 +35,21 @@ mcpkg list authors
   #list of ALL packages and their short descriptions
 mcpkg list packages #command
 
-  #dump packageinfo for package, plus whether the package is queued and whether the package is installed
-mcpkg show <packagename>
+mcpkg list cached #list all cached packages.
 
-  #show packages that can be upgraded
+  #dump packageinfo for package, plus whether the package is queued and whether the package is installed
+mcpkg show <packagename> #command, Package has no installed and queued field yet
+
+  #show packages that can be upgraded, and whether minecraft can be upgraded
 mcpkg list upgrades
 
   #clear the repo cache
 mcpkg clean repos #command
 
 mcpkg clean packages
-  #clear any old (out of date) cached package files
+  #clear any old (out of date) cached package files - would be run automatically 
 mcpkg clean oldpackages
-  #clear all cached package files
+  #clear all cached everything
 mcpkg clean
 
 
@@ -55,7 +60,7 @@ mcpkg queued
 mcpkg installed
 
   #queues package named to be installed next run. if it is not found in the repo, it is searched for as a file.
-#if found as a file, it is copied to package cache. 
+#if found as a file, it is copied to package cache before being added.
 mcpkg queue <name/filename>
 
   #remove package <name> from queue to install (effectively uninstalling it)
@@ -86,10 +91,12 @@ mcpkg create <inputzip/inputdir> <outputzip>
 #but can only be used from command line, or from a special prompt 
 #that allows commands to be entered in the gui that are then processed as commandline thingys
 
+
   #list backups made
 
   #create a backup - main means everything but saves
   #to add later - manual for now
+  #later does not mean after release
 #mcpkg backup list
 #mcpkg backup create (all|saves|main)
 #mcpkg backup restore [saves|main] 

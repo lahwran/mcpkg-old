@@ -147,6 +147,7 @@ public class Index {
 			//java.lang.IndexOutOfBoundsException
 			HashMap<String, ArrayList<String>> pdata = Packages.get(i);
 			Package p = new Package(pdata.get("Name").get(0));
+			Package.Packages.put(p.Name, p);
 			ArrayList<String> dataauthors = pdata.get("Author");
 			String[] temp = dataauthors.get(0).split("[<>]");
 			ArrayList<String[]> authors = new ArrayList<String[]>();
