@@ -46,6 +46,8 @@ public class Index {
 		return false;
 	}
 	
+	//TODO: multiple, comma-separated minecraft versions - only read in the one for the current minecraft version
+	//TODO: only read in latest version
 	public static String[][] readRepoFromStream(BufferedReader in, String[] curKV, boolean cansection, boolean cansubrepo)
 	{
 		ArrayList<String[]> fieldcache = new ArrayList<String[]>();
@@ -154,7 +156,7 @@ public class Index {
 			authors.add(new String[] {temp[0], temp[1]});
 			for(int j=1; j<dataauthors.size(); j++)
 			{
-				temp = dataauthors.get(i).split("[<>]");
+				temp = dataauthors.get(j).split("[<>]");
 				authors.add(new String[] {temp[0], temp[1]});
 			}
 			p.Authors=authors.toArray(new String[0][]);
@@ -224,7 +226,7 @@ public class Index {
 		ArrayList<PackageCompare> comparers = new ArrayList<PackageCompare>();
 		if(list == null)
 			return new PackageCompare[0];
-		String[] comparisons = list.split(", ");
+		String[] comparisons = list.split(" *, *");
 		
 		for(int i=0; i<comparisons.length; i++)
 		{

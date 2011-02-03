@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 
 
@@ -121,6 +123,11 @@ public class PackageCompare implements Comparator<Package> {
 			throw new IllegalArgumentException("invalid comparison number "+comparison);
 		}
 	}
+	
+	//-1 means second one is newer
+	//0 means equals
+	//1 means first one is newer
+	//sort will be 0=lowest to length-1=highest
 	@Override
 	public int compare(Package arg0, Package arg1) {
 		// TODO Auto-generated method stub
@@ -129,10 +136,42 @@ public class PackageCompare implements Comparator<Package> {
 	
 	public static int scompare(Package arg0, Package arg1) //scompare - static compare, because it's retarded to initialize an object
 	{
+		if(arg0 == arg1)
+			return 0;
+		if(arg0 == null)
+			return -1;
+		else if (arg1 == null)
+			return 1;
+		
+		
 		int mc=CompareVersion.compare(arg0.MCVersion, arg1.MCVersion);
 		if(mc != 0)
 			return mc;
 		return CompareVersion.compare(arg0.Version, arg1.Version);
 	}
 	
+	public Package[] all()
+	{
+		Package[] packages=Package.Packages.values().toArray(new Package[0]);
+		ArrayList<Package> matches = new ArrayList<Package>();
+		for(int i=0; i<packages.length; i++)
+		{
+			if(test(packages[i]))
+			{
+				matches.add(packages[i]);
+			}
+		}
+		Collections.sort(matches, this);
+		
+		return matches.toArray(new Package[0]);
+	}
+	
+	public Package get() //get latest
+	{
+		Package[] p = all();
+		if(p.length == 0)
+			return null;
+		
+		return p[p.length-1];
+	}
 }

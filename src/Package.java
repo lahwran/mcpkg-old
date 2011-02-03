@@ -34,6 +34,7 @@ public class Package {
 	public Package(String _name)
 	{
 		//Packages.put(_name, this);
+		System.out.println("new package: "+_name);
 		Name = _name;
 	}
 	
@@ -60,8 +61,12 @@ public class Package {
 	public static Package readFile(File f)
 	{
 		return null;
-		//TODO: deal with this, it's a bit important
+		//TODO: deal with this stub, it's a bit important
 	}
 	
-	//TODO: package download function
+	
+	public static void cachePackage(Package p)
+	{
+		//TODO: implement package download function
+	}
 }

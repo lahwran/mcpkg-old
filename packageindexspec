@@ -30,6 +30,15 @@ IndexVersion: <arbitrary string>
 #when the name conflicts with the name from another repo, it is prefixed with the repository owner name. if it still conflicts, then the version is added. if it still conflicts, the user is alerted.
 Package: <PackageName>
 
+#used in searches and in the gui 
+#Nicename: <userfriendly name> #not in first release
+
+#used in searches, but not ever displayed to user
+#SearchTags: <comma-separated tags> #not in first release
+
+#can be specified multiple times
+#Screenshot: <link to screenshot> #not in first release
+
 #Contact should be either an email or a url (such as an irc url) where modder can be contacted
 #must have at least one author line
 #can specify multiple Author lines when the package is a collaboration

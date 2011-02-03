@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 
+//TODO: queue should know which packages were queued as a dependency and which were manually queued
 
 public class Queue {
 	
@@ -16,13 +17,12 @@ public class Queue {
 	
 	public static void readqueue()
 	{
-		ArrayList<String> lines = new ArrayList<String>();
-		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
 		cachedir.mkdirs();
 		appdir.mkdirs();//won't do anything if it's not needed
 		File queuefile = new File(appdir,"queue.lst");
+		thequeue = new ArrayList<Package>(); //clear it before loading - but only once we know the queue file exists
 		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
 		FileInputStream f1 = null;
 		try {
@@ -35,7 +35,7 @@ public class Queue {
 		BufferedReader f3 = new BufferedReader(f2);
 		
 		
-		Package[] packages=Commands.getPackages();
+		Package[] packages=Package.Packages.values().toArray(new Package[0]);
 		for(int i=0; i<packages.length; i++)
 		{
 			packages[i].getCachename(); //generate cache names that haven't been
@@ -94,5 +94,19 @@ public class Queue {
 			e.printStackTrace();
 		}
 	}
+	
+	
+	public static void queuePackage(Package p)
+	{
+		//TODO: stub 
+		//should calculate dependencies, remove packages from queue that are conflicted, install everything depended upon, etc
+	}
+	public static void unqueuePackage(Package p)
+	{
+		//TODO: stub
+		//reverse of queuepackage
+	}
+	
+	//TODO: all dependency calculation should be in separate functions, so that Commands can ask what will be done if it runs queuePackage or unqueuePackage
 	
 }
