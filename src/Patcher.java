@@ -12,10 +12,15 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+
+import targetting.DirArchive;
+import targetting.DirOutputStream;
+import targetting.IArchive;
+import targetting.IDirOutputStream;
+import targetting.IEntry;
+import targetting.ZipArchive;
+import targetting.ZipDirOutputStream;
 
 import com.nothome.delta.Delta;
 import com.nothome.delta.DiffWriter;
@@ -43,40 +48,42 @@ public class Patcher {
 
 	
 	
-	public static ZipEntry[][] readZip(ZipFile f) throws IOException
+	public static IEntry[][] readZip(IArchive f) throws IOException
 	{
 		
-		ArrayList<ZipEntry> files = new ArrayList<ZipEntry>();
-		ArrayList<ZipEntry> directories = new ArrayList<ZipEntry>();
+		ArrayList<IEntry> files = new ArrayList<IEntry>();
+		ArrayList<IEntry> directories = new ArrayList<IEntry>();
 
 		
 		
 		
 		for (Enumeration enumer = f.entries(); enumer.hasMoreElements(); )
 		{
-			ZipEntry entry = (ZipEntry)enumer.nextElement();
+			IEntry entry = (IEntry)enumer.nextElement();
 			if(entry.isDirectory())
 			{
 				directories.add(entry);
+				System.out.println("read dir:  "+entry.getName());
 			}
 			else
 			{
 				files.add(entry);
+				System.out.println("read file: "+entry.getName());
 			}
 		}
-		ZipEntry[] A = new ZipEntry[0];
-		return new ZipEntry[][]{files.toArray(A),directories.toArray(A)};
+		IEntry[] A = new IEntry[0];
+		return new IEntry[][]{files.toArray(A),directories.toArray(A)};
 	}
 	
-	public static boolean applypatch(String target, ZipFile originalreader, ZipFile patchreader, ZipOutputStream output, boolean dodelete)
+	public static boolean applypatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete)
 	{
 		try
 		{
 			System.out.println("getting patch names ...");
-			ZipEntry[][] patchcontent = readZip(patchreader);
+			IEntry[][] patchcontent = readZip(patchreader);
 	
 			System.out.println("getting input names ...");
-			ZipEntry[][] incontent = readZip(originalreader);
+			IEntry[][] incontent = readZip(originalreader);
 			
 			Properties deletions = new Properties();
 			Properties patches = new Properties();
@@ -148,9 +155,11 @@ public class Patcher {
 				if( patchcontent[1][i].getName().startsWith(target+"/add/"))
 				{
 					String outname = patchcontent[1][i].getName();
-					outname = outname.substring((target+"/add/").length()-1);
-					System.out.println(outname);
-					ZipEntry outputEntry = new ZipEntry(outname);
+					outname = outname.substring((target+"/add/").length());
+					if(outname.length() == 0)
+						continue;
+					System.out.println("'"+outname+"'");
+					IEntry outputEntry = output.makeEntry(outname);
 					output.putNextEntry(outputEntry);
 				}
 			}
@@ -159,7 +168,7 @@ public class Patcher {
 			{
 				if(deletions.getProperty(incontent[1][i].getName(), "").equals("") || incontent[1][i].getName().toLowerCase().equals("meta-inf/"))
 				{
-					ZipEntry outputEntry = new ZipEntry(incontent[1][i].getName());
+					IEntry outputEntry = output.makeEntry(incontent[1][i].getName());
 					output.putNextEntry(outputEntry);
 				}
 			}
@@ -171,14 +180,14 @@ public class Patcher {
 				if( patchcontent[0][i].getName().startsWith(target+"/add/"))
 				{
 					String outname = patchcontent[0][i].getName();
-					outname = outname.substring((target+"/add/").length()-1);
+					outname = outname.substring((target+"/add/").length());
 					System.out.println(outname);
-					ZipEntry outputEntry = new ZipEntry(outname);
+					IEntry outputEntry = output.makeEntry(outname);
 					output.putNextEntry(outputEntry);
 					outputEntry.setTime(patchcontent[0][i].getTime());
 					
 					
-					ZipEntry in =patchcontent[0][i];
+					IEntry in =patchcontent[0][i];
 					int inSize = (int)in.getSize();
 					byte[] inBytes = new byte[inSize];
 					InputStream sourceStream = patchreader.getInputStream(in);
@@ -198,18 +207,19 @@ public class Patcher {
 			{
 				if(!deletions.getProperty(incontent[0][i].getName(), "").equals("") && !incontent[0][i].getName().toLowerCase().equals("meta-inf/manifest.mf"))
 				{
+					System.out.println(incontent[0][i].getName()+" deleted");
 					continue; //deletion
 				}
 				else if (!patches.getProperty(incontent[0][i].getName(), "").equals(""))
 				{
 					String[] inf = patches.getProperty(incontent[0][i].getName()).split(" ");
 					//already verified that inf will be 3 long at this point
-					ZipEntry patch = patchreader.getEntry(target+"/patch/"+incontent[0][i].getName()+inf[0]);
+					IEntry patch = patchreader.getEntry(target+"/patch/"+incontent[0][i].getName()+inf[0]);
 					InputStream patchinput = patchreader.getInputStream(patch);
-					ZipEntry outputEntry = new ZipEntry(incontent[0][i].getName());
+					IEntry outputEntry = output.makeEntry(incontent[0][i].getName());
 					output.putNextEntry(outputEntry);
 					
-					ZipEntry in =incontent[0][i];
+					IEntry in =incontent[0][i];
 					int inSize = (int)in.getSize();
 					byte[] inBytes = new byte[inSize];
 					InputStream sourceStream = originalreader.getInputStream(in);
@@ -220,14 +230,14 @@ public class Patcher {
 					erg += sourceStream.read(inBytes, erg, inBytes.length - erg));
 					sourceStream.close();
 					
-					patcher.patch(inBytes, patchinput, output);
+					patcher.patch(inBytes, patchinput, output.getOStream());
 				}
 				else
 				{
-					ZipEntry outputEntry = new ZipEntry(incontent[0][i].getName());
+					IEntry outputEntry = output.makeEntry(incontent[0][i].getName());
 					output.putNextEntry(outputEntry);
 					
-					ZipEntry in =incontent[0][i];
+					IEntry in =incontent[0][i];
 					int inSize = (int)in.getSize();
 					System.out.println(incontent[0][i].getName()+" "+inSize);
 					if(inSize > 0)
@@ -256,19 +266,19 @@ public class Patcher {
 		return true;
 	}
 	
-	public static void makepatch(String target, ZipFile originalreader, ZipFile patchreader, ZipOutputStream output, boolean dodelete)
+	public static void makepatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete)
 	{
 		try
 		{
 			System.out.println("getting patch names ...");
-			ZipEntry[][] patchcontent = readZip(patchreader);
+			IEntry[][] patchcontent = readZip(patchreader);
 	
 			System.out.println("getting input names ...");
-			ZipEntry[][] incontent = readZip(originalreader);
+			IEntry[][] incontent = readZip(originalreader);
 			
-			ZipEntry[][] addedcontent = new ZipEntry[2][];
-			ZipEntry[][][] sharedcontent = new ZipEntry[2][][];
-			ZipEntry[][] delcontent = new ZipEntry[2][];
+			IEntry[][] addedcontent = new IEntry[2][];
+			IEntry[][][] sharedcontent = new IEntry[2][][];
+			IEntry[][] delcontent = new IEntry[2][];
 			
 			
 			Properties deletions = new Properties();
@@ -278,8 +288,8 @@ public class Patcher {
 			System.out.println("added and shared");
 			for(int ptype=0; ptype<patchcontent.length; ptype++)
 			{
-				ArrayList<ZipEntry> added = new ArrayList<ZipEntry>();
-				ArrayList<ZipEntry[]> shared = new ArrayList<ZipEntry[]>();
+				ArrayList<IEntry> added = new ArrayList<IEntry>();
+				ArrayList<IEntry[]> shared = new ArrayList<IEntry[]>();
 				for(int i = 0; i<patchcontent[ptype].length; i++)
 				{
 					boolean isnew = true;
@@ -289,7 +299,7 @@ public class Patcher {
 						if(incontent[ptype][j].getName().equalsIgnoreCase(curname))
 						{
 							isnew=false;
-							shared.add(new ZipEntry[]{patchcontent[ptype][i], incontent[ptype][j]});
+							shared.add(new IEntry[]{patchcontent[ptype][i], incontent[ptype][j]});
 						}
 					}
 					if(isnew)
@@ -297,25 +307,25 @@ public class Patcher {
 						added.add(patchcontent[ptype][i]);
 					}
 				}
-				ZipEntry[][] A = new ZipEntry[0][];
-				ZipEntry[] B = new ZipEntry[0];
+				IEntry[][] A = new IEntry[0][];
+				IEntry[] B = new IEntry[0];
 				sharedcontent[ptype] = shared.toArray(A);
 				addedcontent[ptype] = added.toArray(B);
 			}
 			System.out.println("added dirs");
 			for(int i=0; i<addedcontent[1].length; i++)
 			{	
-				ZipEntry outputEntry = new ZipEntry(target+"/add/"+addedcontent[1][i].getName());
+				IEntry outputEntry = output.makeEntry(target+"/add/"+addedcontent[1][i].getName());
 				output.putNextEntry(outputEntry);
 			}
 			System.out.println("added files");
 			for(int i=0; i<addedcontent[0].length; i++)
 			{	
-				ZipEntry outputEntry = new ZipEntry(target+"/add/"+addedcontent[0][i].getName());
+				IEntry outputEntry = output.makeEntry(target+"/add/"+addedcontent[0][i].getName());
 				
 				output.putNextEntry(outputEntry);
 				
-				ZipEntry in =addedcontent[0][i];
+				IEntry in =addedcontent[0][i];
 				int inSize = (int)in.getSize();
 				byte[] inBytes = new byte[inSize];
 				InputStream sourceStream = patchreader.getInputStream(in);
@@ -333,7 +343,7 @@ public class Patcher {
 				System.out.println("deleted");
 				for(int ptype=0; ptype<incontent.length; ptype++)
 				{
-					ArrayList<ZipEntry> deleted = new ArrayList<ZipEntry>();
+					ArrayList<IEntry> deleted = new ArrayList<IEntry>();
 					for(int i =0; i<incontent[ptype].length; i++)
 					{
 						boolean isdel = true;
@@ -350,7 +360,7 @@ public class Patcher {
 							deleted.add(incontent[ptype][i]);
 						}
 					}
-					ZipEntry[] B = new ZipEntry[0];
+					IEntry[] B = new IEntry[0];
 					delcontent[ptype] = deleted.toArray(B);
 				}
 				
@@ -406,8 +416,8 @@ public class Patcher {
 				if(differs)
 				{
 					//TODO: generic IO, so that gzip out and flat folder in works too
-					ZipEntry in =sharedcontent[0][i][1];
-					ZipEntry pat = sharedcontent[0][i][0];
+					IEntry in =sharedcontent[0][i][1];
+					IEntry pat = sharedcontent[0][i][0];
 					String pfname = target + "/patch/" + in.getName();
 					
 					
@@ -427,7 +437,7 @@ public class Patcher {
 					d.compute(inBytes, patchreader.getInputStream(pat), diffWriter);
 					diffWriter.close();
 					
-					ZipEntry outputEntry = new ZipEntry(pfname + extension);
+					IEntry outputEntry = output.makeEntry(pfname + extension);
 					outputEntry.setTime(pat.getTime());
 					output.putNextEntry(outputEntry);
 					output.write(outputStream.toByteArray());
@@ -438,13 +448,13 @@ public class Patcher {
 			patches.store(System.out, "");
 			
 	
-			ZipEntry patchprop = new ZipEntry(target + "/patch/patch.properties");
+			IEntry patchprop = output.makeEntry(target + "/patch/patch.properties");
 			output.putNextEntry(patchprop);
-			patches.store(output, "");
+			patches.store(output.getOStream(), "");
 			
-			ZipEntry delprop = new ZipEntry(target + "/delete.properties");
+			IEntry delprop = output.makeEntry(target + "/delete.properties");
 			output.putNextEntry(delprop);
-			deletions.store(output, "");
+			deletions.store(output.getOStream(), "");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -471,12 +481,25 @@ public class Patcher {
 			if(args[0].equalsIgnoreCase("make"))
 			{
 				String target = args[1];
-				String originalzip = args[2];
-				String alteredzip = args[3];
-				String patchzip = args[4];
-				ZipOutputStream outwriter = new ZipOutputStream(new FileOutputStream(patchzip));
-				ZipFile inreader = new ZipFile(originalzip);
-				ZipFile patchreader = new ZipFile(alteredzip);
+				File original = new File(args[2]); 
+				File patch = new File(args[3]);
+				File altered = new File(args[4]);
+				IDirOutputStream outwriter = null;
+				if((!args[4].endsWith("/")) && !altered.isDirectory())
+					outwriter = new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(altered)));
+				else
+					outwriter = new DirOutputStream(altered);
+				
+				IArchive inreader = null;
+				if(original.isFile())
+					inreader = new ZipArchive(original);
+				else
+					inreader = new DirArchive(original);
+				IArchive patchreader = null;
+				if(patch.isFile())
+					patchreader = new ZipArchive(patch);
+				else
+					patchreader = new DirArchive(patch);
 				
 				makepatch(target,inreader, patchreader, outwriter, true);
 				
@@ -487,12 +510,25 @@ public class Patcher {
 			else if(args[0].equalsIgnoreCase("apply"))
 			{
 				String target = args[1];
-				String originalzip = args[2]; 
-				String patchzip = args[3];
-				String alteredzip = args[4];
-				ZipOutputStream outwriter = new ZipOutputStream(new FileOutputStream(alteredzip));
-				ZipFile inreader = new ZipFile(originalzip);
-				ZipFile patchreader = new ZipFile(patchzip);
+				File original = new File(args[2]); 
+				File patch = new File(args[3]);
+				File altered = new File(args[4]);
+				IDirOutputStream outwriter = null;
+				if((!args[4].endsWith("/")) && !altered.isDirectory())
+					outwriter = new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(altered)));
+				else
+					outwriter = new DirOutputStream(altered);
+				
+				IArchive inreader = null;
+				if(original.isFile())
+					inreader = new ZipArchive(original);
+				else
+					inreader = new DirArchive(original);
+				IArchive patchreader = null;
+				if(patch.isFile())
+					patchreader = new ZipArchive(patch);
+				else
+					patchreader = new DirArchive(patch);
 				
 				
 				if(applypatch(target,inreader, patchreader, outwriter, true))
@@ -575,7 +611,7 @@ public class Patcher {
 			JarDelta patchmaker = new JarDelta();
 		
 			try {
-				patchmaker.computeDelta(new ZipFile(args[0]), new ZipFile(args[1]), new ZipOutputStream(new FileOutputStream(args[2])));
+				patchmaker.computeDelta(new IArchive(args[0]), new IArchive(args[1]), new IDirOutputStream(new FileOutputStream(args[2])));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -585,7 +621,7 @@ public class Patcher {
 		else if (args.length == 4 && args[0] == "patch")
 		{
 			try {
-				new JarPatcher().applyDelta(new ZipFile(args[0]), new ZipFile(args[1]), new ZipOutputStream(new FileOutputStream(args[2])));
+				new JarPatcher().applyDelta(new IArchive(args[0]), new IArchive(args[1]), new IDirOutputStream(new FileOutputStream(args[2])));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
