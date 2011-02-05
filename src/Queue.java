@@ -22,7 +22,11 @@ public class Queue {
 		cachedir.mkdirs();
 		appdir.mkdirs();//won't do anything if it's not needed
 		File queuefile = new File(appdir,"queue.lst");
-		thequeue = new ArrayList<Package>(); //clear it before loading - but only once we know the queue file exists
+		
+		//thequeue = new ArrayList<Package>(); //clear it before loading - but only once we know the queue file exists
+		if(thequeue != null)
+			return; //guess we don't want to reinit it...
+		
 		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
 		FileInputStream f1 = null;
 		try {

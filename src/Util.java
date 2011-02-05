@@ -34,7 +34,7 @@ public class Util {
 	    }
 	}
 
-	public static String getNextLine(BufferedReader in) //eats comment and blank lines
+	public static String getNextLine(BufferedReader in) //eats comment and blank lines -- "omnomnomnom" says guipsp
 	{
 		String r=null;
 		try {
