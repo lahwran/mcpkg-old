@@ -37,7 +37,7 @@ public class Package {
 	public Package(String _name)
 	{
 		//Packages.put(_name, this);
-		System.out.println("new package object: "+_name);
+		//System.out.println("new package object: "+_name);
 		Name = _name;
 	}
 	

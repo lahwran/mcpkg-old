@@ -25,6 +25,7 @@ public class Commands {
 	
 	public static void disableRepo(String id)
 	{
+		Index.loadrepos();
 		ArrayList<String> lines = new ArrayList<String>();
 		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
@@ -90,6 +91,7 @@ public class Commands {
 	
 	public static void addRepo(String id)
 	{
+		Index.loadrepos();
 		ArrayList<String> lines = new ArrayList<String>();
 		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
@@ -203,7 +205,7 @@ public class Commands {
 				splits = 2;
 			matchcount += (splits-1)*10;
 			
-			System.out.println(allpackages[i].Name + " " + matchcount);
+			//System.out.println(allpackages[i].Name + " " + matchcount);
 			
 			//matchcount /= 10; //why bother?
 			if (matchcount > 0)
@@ -250,7 +252,19 @@ public class Commands {
 		Queue.queuePackage(new PackageCompare(id).get());
 	}
 	
+	public static void unqueuePackage(String id)
+	{
+		Index.loadrepos(); 
+		Queue.readqueue();
+		Queue.unqueuePackage(new PackageCompare(id).get());
+	}
 	
+	public static Package[] getQueue()
+	{
+		Index.loadrepos(); 
+		Queue.readqueue();
+		return Queue.thequeue.toArray(new Package[0]);
+	}
 	
 	public static void run()
 	{

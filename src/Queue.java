@@ -24,7 +24,7 @@ public class Queue {
 		File queuefile = new File(appdir,"queue.lst");
 		
 		//thequeue = new ArrayList<Package>(); //clear it before loading - but only once we know the queue file exists
-		if(thequeue != null)
+		if(thequeue != null && thequeue.size() > 0)
 			return; //guess we don't want to reinit it...
 		
 		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.

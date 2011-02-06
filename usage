@@ -14,37 +14,44 @@
 #minecraft is treated like a package - when there is an upgrade available on manager launch, the version file is updated, and upgrade is offered.
 #the package manager then loads up the minecraft version from the jars.
 
+mcpkg #with no arguments, aka a doubleclick on the jar, launches the gui
+
   #searches package names and descriptions for <string>
   #multiple arguments are merged into one string - "mcpkg search mod loader" searches for "mod loader"
-mcpkg search <string> [--section=X] [--author=X] #command - missing filters
+mcpkg search <string> [--section=X] [--author=X] #command - missing filters #cli
   #add and cache repo
-mcpkg addrepo <mainrepourl> #command
+mcpkg addrepo <mainrepourl> #command #cli
 
   #delete repo, do not uncache
-mcpkg delrepo <repo #/url> #command
+mcpkg delrepo <repo #/url> #command #cli
 
 
-  #shows list of repos in repo file, including line number in in repo file
-mcpkg list repos #command
+  #shows list of repos in repo file, including number in in repo file
+mcpkg list repos #command #cli
 
 
   #list sections
-mcpkg list sections #command
+mcpkg list sections #command #cli
   #list all modders and their contacts - this is why you put something in the contact that can withstand spam!
 mcpkg list authors 
   #list of ALL packages and their short descriptions
-mcpkg list packages #command
+mcpkg list packages #command #cli
+#list all cached packages.
+mcpkg list cached
+  #show packages that are queued for install next time minecraft is started
+mcpkg list queue #command #cli
+  #show packages that are currently installed
+mcpkg list installed
 
-mcpkg list cached #list all cached packages.
 
   #dump packageinfo for package, plus whether the package is queued and whether the package is installed
-mcpkg show <packagename> #command, Package has no installed and queued field yet
+mcpkg show <packagename> #command, Package has no installed and queued field yet #cli
 
   #show packages that can be upgraded, and whether minecraft can be upgraded
 mcpkg list upgrades
 
   #clear the repo cache
-mcpkg clean repos #command
+mcpkg clean repos #command #cli
 
 mcpkg clean packages
   #clear any old (out of date) cached package files - would be run automatically 
@@ -53,15 +60,10 @@ mcpkg clean oldpackages
 mcpkg clean
 
 
-  #show packages that are queued for install next time minecraft is started
-mcpkg queued
-
-  #show packages that are currently installed
-mcpkg installed
 
   #queues package named to be installed next run. if it is not found in the repo, it is searched for as a file.
 #if found as a file, it is copied to package cache before being added.
-mcpkg queue <name/filename>
+mcpkg queue <name/filename> #command #cli
 
   #remove package <name> from queue to install (effectively uninstalling it)
 mcpkg unqueue <name>

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -17,9 +18,19 @@ import java.util.HashMap;
 public class Index {
 
 	public static String[] mainrepos;
-	public static final String defaultrepo = "file:///home/blendmaster/workspace/Patcher/testindex";
+	//public static final String defaultrepo = "file:///home/blendmaster/workspace/Patcher/testindex";
+	public static final String defaultrepo = "http://dl.dropbox.com/u/16327181/mcpkg/001index";
 	
 	public static HashMap<String, String> Sections = new HashMap<String, String>();
+	public static ArrayDeque<subrepo> subrepos = new ArrayDeque<subrepo>();
+	
+	public static class subrepo {
+		String name;
+		String index;
+		boolean FollowSubrepos;
+		boolean AddSections;
+		String Description;
+	}
 	
 	public static String[] splitKV(String whole)
 	{
@@ -132,16 +143,35 @@ public class Index {
 		//*/
 		///*
 		//icky name is icky
-		ArrayList<HashMap<String, ArrayList<String>>> Sectionsarr = loadeddata.get("Section");
-		for(int i=0; i<Sectionsarr.size(); i++)
+		if(cansection)
 		{
-			HashMap<String, ArrayList<String>> sdata = Sectionsarr.get(i);
-			if((!Sections.containsKey(sdata.get("Name").get(0))) && (sdata.get("Description")!=null))
-				Sections.put(sdata.get("Name").get(0),sdata.get("Description").get(0));
-			else if(!Sections.containsKey(sdata.get("Name").get(0)))
-				Sections.put(sdata.get("Name").get(0),null);
-			//else
-			//	throw new IllegalArgumentException("tried to add duplicate section "+sdata.get("Name").get(0));
+			ArrayList<HashMap<String, ArrayList<String>>> Sectionsarr = loadeddata.get("Section");
+			for(int i=0; i<Sectionsarr.size(); i++)
+			{
+				HashMap<String, ArrayList<String>> sdata = Sectionsarr.get(i);
+				if((!Sections.containsKey(sdata.get("Name").get(0))) && (sdata.get("Description")!=null))
+					Sections.put(sdata.get("Name").get(0),sdata.get("Description").get(0));
+				else if(!Sections.containsKey(sdata.get("Name").get(0)))
+					Sections.put(sdata.get("Name").get(0),null);
+				//else
+				//	throw new IllegalArgumentException("tried to add duplicate section "+sdata.get("Name").get(0));
+			}
+		}
+		if(cansubrepo)
+		{
+			ArrayList<HashMap<String, ArrayList<String>>> subrepoarr = loadeddata.get("Repository");
+			for(int i=0; i<subrepoarr.size(); i++)
+			{
+				HashMap<String, ArrayList<String>> sdata = subrepoarr.get(i);
+				subrepo s = new subrepo();
+				s.name = sdata.get("Name").get(0);
+				s.index = sdata.get("Index").get(0);
+				s.FollowSubrepos = sdata.get("FollowSubrepos") != null && sdata.get("FollowSubrepos").get(0).equalsIgnoreCase("true");
+				s.AddSections = cansection && sdata.get("AddSections") != null && sdata.get("AddSections").get(0).equalsIgnoreCase("true");
+				s.Description = sdata.get("Description").get(0);
+				//owner is ignored?!
+				subrepos.add(s);
+			}
 		}
 		ArrayList<HashMap<String, ArrayList<String>>> Packages = loadeddata.get("Package");
 		for(int i=0; i<Packages.size(); i++)
@@ -310,6 +340,11 @@ public class Index {
 		for(int i=0; i<mainrepos.length; i++)
 		{
 			loadrepo(mainrepos[i], true, true);
+		}
+		while(!subrepos.isEmpty())
+		{
+			subrepo s = subrepos.removeFirst();
+			loadrepo(s.index, s.AddSections, s.FollowSubrepos);
 		}
 	}
 	public static String repolisthash = "";

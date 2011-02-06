@@ -34,7 +34,7 @@ public class Installer {
 		File in = backupdir;
 		File out = new File(appdir, "tmp1");
 		int target = 1;
-		
+		//TODO: I think this will break when no packages are selected?
 		for(int i=0; i<Queue.thequeue.size(); i++)
 		{
 			System.out.println("in/ot");
@@ -72,7 +72,7 @@ public class Installer {
 			{
 				in = out;
 				out = minecraftdir;
-				Patcher.deleteDir(out); //clear it 
+				Patcher.deleteDir(out); //clear it ... but nicely, we are not to touch saves and such
 			}
 			else if (target == 1)
 			{
@@ -80,7 +80,7 @@ public class Installer {
 				in = new File(appdir, "tmp1");
 				out = new File(appdir, "tmp2");
 				if(out.exists())
-					Patcher.deleteDir(out); 
+					Patcher.deleteDirMean(out); 
 				
 			}
 			else
@@ -89,7 +89,7 @@ public class Installer {
 				in = new File(appdir, "tmp2");
 				out = new File(appdir, "tmp1");
 				if(out.exists())
-					Patcher.deleteDir(out); 
+					Patcher.deleteDirMean(out); 
 			}
 		}
 		in = new File(appdir, "tmp2");
