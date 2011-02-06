@@ -102,11 +102,20 @@ public class Queue {
 	
 	public static void queuePackage(Package p)
 	{
-		//TODO: stub 
-		//should calculate dependencies, remove packages from queue that are conflicted, install everything depended upon, etc
+		try {
+			p.cache();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		thequeue.add(p);
+		writequeue();
+		//TODO: should calculate dependencies, remove packages from queue that are conflicted, install everything depended upon, etc
 	}
 	public static void unqueuePackage(Package p)
 	{
+		thequeue.remove(p);
+		writequeue();
 		//TODO: stub
 		//reverse of queuepackage
 	}

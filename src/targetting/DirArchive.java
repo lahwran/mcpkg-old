@@ -23,7 +23,10 @@ public class DirArchive implements IArchive {
 
 	@Override
 	public IEntry getEntry(String location) {
-		return new DirEntry(location);
+		DirEntry e = new DirEntry(location, this);
+		if(!(new File(directory, location)).exists())
+			return null;
+		return e;
 	}
 
 	@Override

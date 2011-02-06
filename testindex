@@ -6,8 +6,8 @@ Package: modloader
 Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
 PackageSection: libraries
 Homepage: http://www.minecraftforum.net/viewtopic.php?f=25&t=80246
-Version: 1.2_02 2 http://www.mediafire.com/?2asbj2aatk0e5p9
-Description:  
+Version: 1.2_02 2 file:///home/blendmaster/workspace/Patcher/modloader.mcpkg
+Description: Relatively small api for the most common mod functions 
 A mod, kind of like a mod manager, that stops conflicts with mods 
 that alter rendering, recipes, add entities, gui, smeltables or fuel. 
 
@@ -19,48 +19,53 @@ Support for 303's modifications is included. In addition, texture packs are
 supported for override images and chunk population hook was added.
 
 
-Package: lightsensor
-Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
-PackageSection: redstone sensors
-Version: 1.2_02 . http://www.mediafire.com/?qzw7kp26xhz17qx
+#Package: lightsensor
+#Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
+#PackageSection: redstone sensors
+#Version: 1.2_02 . http://www.mediafire.com/?qzw7kp26xhz17qx
+#Depends: modloader
+#Description: Adds a new craftable block that is a new input for redstone mechanisms
+#It turns on if it is hit with a 12 light levels. It is crafted with five 
+#redstone powder in a + shape, with four iron, one in each corner. 
+
+
+#Package: elemental-arrows
+#Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
+#PackageSection: weapons
+#Version: 1.2_02 . http://www.mediafire.com/?yqj2r3okh0f9rnw
+#Depends: modloader
+#Description: adds four new types of arrows; explosive arrows, fire arrows, ice arrows, and a joke weapon, egg arrows.
+#They are crafted the same way as normal arrows, but the head is replaced based on the element; 
+#gunpowder for explosive, coal for fire, snowball for ice, and egg for, well, egg. 
+#Crafting an explosive arrow only gives you one arrow, and it explodes upon impact. 
+#Crafting a fire arrow gives you one arrow, that will ignite stuff upon impact. 
+#Crafting an ice arrow gives you one arrow, that will freeze water into ice, 
+#lava springs into obsidian, put out fire, and break torches. 
+#Egg arrows spawn chickens upon impact with the ground, but there's a secret too. 
+#Includes custom icons for the arrows! Homing bow recipe is same layout as regular bow,
+#but diamond instead of sticks.
+
+
+#Package: more-stackables
+#Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
+#PackageSection: game mechanics
+#Version: 1.2_02 . http://www.mediafire.com/?dyczs0ek6kuxhws
+#Description: Makes more of the normal items stackable
+#Makes food stackable up to 16 in stack, saddles, doors, 
+#and signs up to 8 in a stack, minecarts and boats up to 4 in a stack. 
+#When stacked, food and buckets are unusable, however, everything else is. 
+#This is great for storage and for using workbenches, chests, 
+#or furnaces, as you no longer will dump the bucket or consume your food!
+
+Package: zansminimap
+Author: Zaneris<contactinfohere>
+PackageSection: gui features
+Version: 1.2_02 0.9.7a file:///home/blendmaster/workspace/Patcher/zanminimap.mcpkg
 Depends: modloader
-Description: Adds a new craftable block that is a new input for redstone mechanisms
-It turns on if it is hit with a 12 light levels. It is crafted with five 
-redstone powder in a + shape, with four iron, one in each corner. 
-
-
-Package: elemental-arrows
-Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
-PackageSection: weapons
-Version: 1.2_02 . http://www.mediafire.com/?yqj2r3okh0f9rnw
-Depends: modloader
-Description: adds four new types of arrows; explosive arrows, fire arrows, ice arrows, and a joke weapon, egg arrows.
-They are crafted the same way as normal arrows, but the head is replaced based on the element; 
-gunpowder for explosive, coal for fire, snowball for ice, and egg for, well, egg. 
-Crafting an explosive arrow only gives you one arrow, and it explodes upon impact. 
-Crafting a fire arrow gives you one arrow, that will ignite stuff upon impact. 
-Crafting an ice arrow gives you one arrow, that will freeze water into ice, 
-lava springs into obsidian, put out fire, and break torches. 
-Egg arrows spawn chickens upon impact with the ground, but there's a secret too. 
-Includes custom icons for the arrows! Homing bow recipe is same layout as regular bow,
-but diamond instead of sticks.
-
-
-Package: more-stackables
-Author: Risugami<http://www.minecraftforum.net/ucp.php?i=pm&mode=compose&u=64988>
-PackageSection: game mechanics
-Version: 1.2_02 . http://www.mediafire.com/?dyczs0ek6kuxhws
-Description: Makes more of the normal items stackable
-Makes food stackable up to 16 in stack, saddles, doors, 
-and signs up to 8 in a stack, minecarts and boats up to 4 in a stack. 
-When stacked, food and buckets are unusable, however, everything else is. 
-This is great for storage and for using workbenches, chests, 
-or furnaces, as you no longer will dump the bucket or consume your food!
+Description: hipslah gipple jah
 
 Package: guiapi
 Author: lahwran<irc://irc.esper.net/lahwran>
-Author: lahwran2<irc://irc.esper.n6et/lahwran>
-Author: lahwran3<irc://irc.esper4.net/lahwran>
 PackageSection: libraries
 
 Version: 1.2_02 0.9.5 [directurl]
@@ -96,3 +101,4 @@ Section: creative tools
 Section: redstone sensors
 Section: weapons
 Section: game mechanics
+Section: gui features

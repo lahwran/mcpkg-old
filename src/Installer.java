@@ -37,6 +37,10 @@ public class Installer {
 		
 		for(int i=0; i<Queue.thequeue.size(); i++)
 		{
+			System.out.println("in/ot");
+			System.out.println(in.getPath());
+			System.out.println(out.getPath());
+			out.mkdirs();
 			ZipArchive patch = null;
 			try {
 				patch = new ZipArchive(new File(cachedir, Queue.thequeue.get(i).getCachename()));
@@ -48,8 +52,14 @@ public class Installer {
 				e.printStackTrace();
 			}
 			Patcher.applypatch("main", new DirArchive(in), patch, new DirOutputStream(out), true);
+			
 			try {
-				Patcher.applypatch("minecraftjar", new ZipArchive(new File(in,"bin/minecraft.jar")), patch, new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(new File(out, "bin/minecraft.jar")))), true);
+				ZipArchive a = new ZipArchive(new File(in,"bin/minecraft.jar"));
+				ZipDirOutputStream b =  new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(new File(out, "bin/minecraft.jar"))));
+				
+				Patcher.applypatch("mcjar", a, patch, b, true);
+				a.close();
+				b.close();
 			} catch (ZipException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -57,7 +67,7 @@ public class Installer {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+			//if(true) break;
 			if(i == Queue.thequeue.size()-2) //next one is -1
 			{
 				in = out;
@@ -85,9 +95,12 @@ public class Installer {
 		in = new File(appdir, "tmp2");
 		out = new File(appdir, "tmp1");
 		if(out.exists())
-			Patcher.deleteDir(out); 
+			Patcher.deleteDirMean(out); 
 		if(in.exists())
-			Patcher.deleteDir(in); 
+			Patcher.deleteDirMean(in); 
+		
+		
+		
 		
 	}
 }

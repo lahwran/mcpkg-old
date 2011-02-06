@@ -1,5 +1,12 @@
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
 
 
 public class Util {
@@ -56,5 +63,31 @@ public class Util {
 	public static String getMinecraftVersion()
 	{//will be a bit of work to get, should cache results
 		return "1.2_02"; //for testing purposes until I actually write this
+	}
+	
+	public static InputStream readURL(String u)
+	{
+		InputStream inputstream = null;
+		try {
+			if (u.startsWith("http://") || u.startsWith("file:")) {
+				URL url = new URL(u);
+				inputstream = url.openStream();
+			} 
+			else 
+			{
+				SSLSocketFactory sslsocketfactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+				URL url = new URL(u);
+				HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+				conn.setSSLSocketFactory(sslsocketfactory);
+				inputstream = conn.getInputStream();
+			}
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return inputstream;
 	}
 }

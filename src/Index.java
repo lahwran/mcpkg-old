@@ -275,10 +275,9 @@ public class Index {
 			File thiscache = new File(cache,cachehash);
 			
 			
-			URL reporeader = new URL(repourl);
 			BufferedReader in;
 			
-			in = new BufferedReader(new InputStreamReader(reporeader.openStream()));
+			in = new BufferedReader(new InputStreamReader(Util.readURL(repourl)));
 		
 
 			String[] inputLine = splitKV(Util.getNextLine(in));
@@ -383,10 +382,5 @@ public class Index {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	
-	public static void main(String[] args)
-	{
-		
 	}
 }

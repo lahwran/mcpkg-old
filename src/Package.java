@@ -1,4 +1,7 @@
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 
 
@@ -34,7 +37,7 @@ public class Package {
 	public Package(String _name)
 	{
 		//Packages.put(_name, this);
-		System.out.println("new package: "+_name);
+		System.out.println("new package object: "+_name);
 		Name = _name;
 	}
 	
@@ -47,8 +50,7 @@ public class Package {
 	{
 		if(CacheName == null)
 		{
-			//TODO: does it make sense to include the package url in the hash? what if the url changes but the version does not?
-			CacheName = MD5Checksum.strmd5(Name+PackageURL+MCVersion+Version);
+			CacheName = MD5Checksum.strmd5(Name+MCVersion+Version);
 			CacheNames.put(CacheName, this);
 		}
 		return CacheName;
@@ -64,9 +66,34 @@ public class Package {
 		//TODO: deal with this stub, it's a bit important
 	}
 	
-	
-	public static void cachePackage(Package p)
-	{
-		//TODO: implement package download function
+	public void cache() throws IOException
+	{ //TODO: could use progress indicator ...
+		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
+		cachedir.mkdirs();
+		File dest = new File(cachedir, getCachename());
+		if(dest.exists())
+			return;
+		InputStream fin = null;
+		FileOutputStream fout = null;
+		byte[] buffer = new byte[4096]; //Buffer 4K at a time (you can change this).
+		int bytesRead;
+		try {
+			//open the files for input and output
+			fin = Util.readURL(PackageURL);
+			fout = new FileOutputStream (dest);
+			//while bytesRead indicates a successful read, lets write...
+			while ((bytesRead = fin.read(buffer)) >= 0) {
+				fout.write(buffer,0,bytesRead);
+			}
+		} catch (IOException e) { //Error copying file... 
+			IOException wrapper = new IOException("copyFiles: Unable to download file " + 
+					PackageURL + " to " + dest.getAbsolutePath()+".");
+			wrapper.initCause(e);
+			wrapper.setStackTrace(e.getStackTrace());
+			throw wrapper;
+		} finally { //Ensure that the files are closed (if they were open).
+			if (fin != null) { fin.close(); }
+			if (fout != null) { fout.close(); }
+		}
 	}
 }

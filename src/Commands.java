@@ -243,5 +243,19 @@ public class Commands {
 		return Package.Packages.get(name);
 	}
 	
+	public static void queuePackage(String id)
+	{
+		Index.loadrepos(); 
+		Queue.readqueue();
+		Queue.queuePackage(new PackageCompare(id).get());
+	}
 	
+	
+	
+	public static void run()
+	{
+		Index.loadrepos(); 
+		Queue.readqueue();
+		Installer.run();
+	}
 }

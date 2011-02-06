@@ -43,7 +43,7 @@ import com.nothome.delta.GDiffWriter;
 	possibly in the future, have
  */
 
-
+//TODO: incorrect error handling
 public class Patcher {
 
 	
@@ -65,12 +65,12 @@ public class Patcher {
 			if(entry.isDirectory())
 			{
 				directories.add(entry);
-				System.out.println("read dir:  "+entry.getName());
+				//System.out.println("read dir:  "+entry.getName());
 			}
 			else
 			{
 				files.add(entry);
-				System.out.println("read file: "+entry.getName());
+				//System.out.println("read file: "+entry.getName());
 			}
 		}
 		IEntry[] A = new IEntry[0];
@@ -108,6 +108,20 @@ public class Patcher {
 	    	return dir.delete();
 	}
 	
+	public static boolean deleteDirMean(File dir) {		
+	    if (dir.isDirectory()) {
+	        String[] children = dir.list();
+	        for (int i=0; i<children.length; i++) {
+	            boolean success = deleteDirMean(new File(dir, children[i]));
+	            if (!success) {
+	                return false;
+	            }
+	        }
+	    }
+
+	    // The directory is now empty so delete it
+	    return dir.delete();
+	}
 	/**
 	 * copied from http://www.dreamincode.net/code/snippet1443.htm
 	 * found with google
@@ -170,24 +184,130 @@ public class Patcher {
 			}
 		}
 	}
+	/*//oops, don't need this after all?
+	//nice is a nondescriptive name
+	//this obeys the rules on what can be touched
+	public static void copyFilesNice(File src, File dest) throws IOException {
+		if(!canTouch(dest.getPath()))
+			return;
+		
+		//Check to ensure that the source is valid...
+		if (!src.exists()) {
+			throw new IOException("copyFiles: Can not find source: " + src.getAbsolutePath()+".");
+		} else if (!src.canRead()) { //check to ensure we have rights to the source...
+			throw new IOException("copyFiles: No right to source: " + src.getAbsolutePath()+".");
+		}
+		//is this a directory copy?
+		if (src.isDirectory()) 	{
+			if (!dest.exists()) { //does the destination already exist?
+				//if not we need to make it exist if possible (note this is mkdirs not mkdir)
+				if (!dest.mkdirs()) {
+					throw new IOException("copyFiles: Could not create direcotry: " + dest.getAbsolutePath() + ".");
+				}
+			}
+			//get a listing of files...
+			String list[] = src.list();
+			//copy all the files in the list.
+			for (int i = 0; i < list.length; i++)
+			{
+				File dest1 = new File(dest, list[i]);
+				File src1 = new File(src, list[i]);
+				copyFiles(src1 , dest1);
+			}
+		} else { 
+			//This was not a directory, so lets just copy the file
+			FileInputStream fin = null;
+			FileOutputStream fout = null;
+			byte[] buffer = new byte[4096]; //Buffer 4K at a time (you can change this).
+			int bytesRead;
+			try {
+				//open the files for input and output
+				fin =  new FileInputStream(src);
+				fout = new FileOutputStream (dest);
+				//while bytesRead indicates a successful read, lets write...
+				while ((bytesRead = fin.read(buffer)) >= 0) {
+					fout.write(buffer,0,bytesRead);
+				}
+			} catch (IOException e) { //Error copying file... 
+				IOException wrapper = new IOException("copyFiles: Unable to copy file: " + 
+							src.getAbsolutePath() + "to" + dest.getAbsolutePath()+".");
+				wrapper.initCause(e);
+				wrapper.setStackTrace(e.getStackTrace());
+				throw wrapper;
+			} finally { //Ensure that the files are closed (if they were open).
+				if (fin != null) { fin.close(); }
+				if (fout != null) { fout.close(); }
+			}
+		}
+	}*/
+	
+	public static boolean copyArchive(IArchive instream, IDirOutputStream outstream) throws IOException
+	{
+		System.out.println("getting input names ...");
+		IEntry[][] incontent = readZip(instream);
+		System.out.println("add old directories");
+		for(int i=0; i<incontent[1].length; i++)
+		{
+			IEntry outputEntry = outstream.makeEntry(incontent[1][i].getName());
+			outstream.putNextEntry(outputEntry);
+		}
+		for(int i=0; i<incontent[0].length; i++)
+		{
+			IEntry outputEntry = outstream.makeEntry(incontent[0][i].getName());
+			outstream.putNextEntry(outputEntry);
+			
+			IEntry in =incontent[0][i];
+			int inSize = (int)in.getSize();
+			//System.out.println(incontent[0][i].getName()+" "+inSize);
+			if(inSize > 0)
+			{
+				byte[] inBytes = new byte[inSize];
+				InputStream sourceStream = instream.getInputStream(in);
+				
+				//System.out.println(""+(in==null)+" "+(inBytes==null));
+
+				//this is icky, jd-gui generated it, I just hope it's some optimization and that the original wasn't icky like this
+				for (int erg = sourceStream.read(inBytes); 
+				erg < inBytes.length;
+				erg += sourceStream.read(inBytes, erg, inBytes.length - erg));
+				sourceStream.close();
+				
+				outstream.write(inBytes);
+			}
+		}
+		return false;
+		
+	}
 	
 	public static boolean applypatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete)
 	{
 		try
 		{
+			System.out.println(target);
+			Properties deletions = new Properties();
+			Properties patches = new Properties();
+			try{
+				
+				deletions.load(patchreader.getInputStream((patchreader.getEntry(target+"/delete.properties"))));
+				patches.load(patchreader.getInputStream((patchreader.getEntry(target+"/patch/patch.properties"))));
+			} catch (NullPointerException e) { 
+				System.out.println("missing target "+target+" - this is probably OK - doing flat copy instead");
+				copyArchive(originalreader, output);
+				return true;
+			}
+			
 			System.out.println("getting patch names ...");
 			IEntry[][] patchcontent = readZip(patchreader);
 	
 			System.out.println("getting input names ...");
 			IEntry[][] incontent = readZip(originalreader);
 			
-			Properties deletions = new Properties();
-			Properties patches = new Properties();
+			
 			
 			InputStream is = null;
 			
-			deletions.load(patchreader.getInputStream((patchreader.getEntry(target+"/delete.properties"))));
-			patches.load(patchreader.getInputStream((patchreader.getEntry(target+"/patch/patch.properties"))));
+			
+			
 			
 			System.out.println("checking all md5sums");
 			System.out.println("delkeys");
@@ -254,7 +374,7 @@ public class Patcher {
 					outname = outname.substring((target+"/add/").length());
 					if(outname.length() == 0)
 						continue;
-					System.out.println("'"+outname+"'");
+					//System.out.println("'"+outname+"'");
 					IEntry outputEntry = output.makeEntry(outname);
 					output.putNextEntry(outputEntry);
 				}
@@ -277,7 +397,7 @@ public class Patcher {
 				{
 					String outname = patchcontent[0][i].getName();
 					outname = outname.substring((target+"/add/").length());
-					System.out.println(outname);
+					//System.out.println(outname);
 					IEntry outputEntry = output.makeEntry(outname);
 					output.putNextEntry(outputEntry);
 					outputEntry.setTime(patchcontent[0][i].getTime());
@@ -303,7 +423,7 @@ public class Patcher {
 			{
 				if(!deletions.getProperty(incontent[0][i].getName(), "").equals("") && !incontent[0][i].getName().toLowerCase().equals("meta-inf/manifest.mf"))
 				{
-					System.out.println(incontent[0][i].getName()+" deleted");
+					//System.out.println(incontent[0][i].getName()+" deleted");
 					continue; //deletion
 				}
 				else if (!patches.getProperty(incontent[0][i].getName(), "").equals(""))
@@ -335,13 +455,13 @@ public class Patcher {
 					
 					IEntry in =incontent[0][i];
 					int inSize = (int)in.getSize();
-					System.out.println(incontent[0][i].getName()+" "+inSize);
+					//System.out.println(incontent[0][i].getName()+" "+inSize);
 					if(inSize > 0)
 					{
 						byte[] inBytes = new byte[inSize];
 						InputStream sourceStream = originalreader.getInputStream(in);
 						
-						System.out.println(""+(in==null)+" "+(inBytes==null));
+						//System.out.println(""+(in==null)+" "+(inBytes==null));
 	
 						//this is icky, jd-gui generated it, I just hope it's some optimization and that the original wasn't icky like this
 						for (int erg = sourceStream.read(inBytes); 
@@ -563,7 +683,7 @@ public class Patcher {
 		//System.getProperty("user.home");
 		
 		//makepatch
-		if(args.length != 5)
+		if(args.length < 3 || args.length > 5)
 		{
 			System.out.println("require exactly five arguments:");
 			System.out.println("... Patcher make TARGET ORIGINALZIP ALTEREDZIP PATCHZIP");
@@ -602,6 +722,50 @@ public class Patcher {
 				outwriter.close();
 				inreader.close();
 				patchreader.close();
+			}
+			else if(args[0].equalsIgnoreCase("package"))
+			{
+				File minecraftdir = new File(Util.getAppDir("minecraft")+"/");
+				
+				File patcha = null;
+				if (!args[1].equals("-"))
+					patcha = new File(args[1]);
+				
+				File patchb = null;
+				if (args.length == 4 && !args[2].equals("-"))
+					patchb = new File(args[2]);
+				
+				IArchive patchreader = null;
+				
+				
+				File altered = new File(args[args.length-1]);
+				IDirOutputStream outwriter = new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(altered)));
+				
+				IArchive inreader = new DirArchive(minecraftdir);
+				
+				
+				if(patcha != null)
+				{
+					if(patcha.isFile())
+						patchreader = new ZipArchive(patcha);
+					else
+						patchreader = new DirArchive(patcha);
+					makepatch("main",inreader, patchreader, outwriter, false);
+					patchreader.close();
+				}
+				
+				
+				if(patchb != null)
+				{
+					if(patchb.isFile())
+						patchreader = new ZipArchive(patchb);
+					else
+						patchreader = new DirArchive(patchb);
+					makepatch("mcjar",new ZipArchive(new File(minecraftdir, "bin/minecraft.jar")), patchreader, outwriter, false);
+					patchreader.close();
+				}
+				outwriter.close();
+				inreader.close();
 			}
 			else if(args[0].equalsIgnoreCase("apply"))
 			{
