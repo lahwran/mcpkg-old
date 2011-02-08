@@ -24,7 +24,7 @@ public class Installer {
 		if(!backupdir.exists())
 		{
 			try {
-				Patcher.copyFiles(minecraftdir, backupdir);
+				Util.copyFiles(minecraftdir, backupdir);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -37,6 +37,7 @@ public class Installer {
 		//TODO: I think this will break when no packages are selected?
 		for(int i=0; i<Queue.thequeue.size(); i++)
 		{
+			System.out.println("about to install: "+Queue.thequeue.get(i).Name);
 			System.out.println("in/ot");
 			System.out.println(in.getPath());
 			System.out.println(out.getPath());
@@ -72,7 +73,7 @@ public class Installer {
 			{
 				in = out;
 				out = minecraftdir;
-				Patcher.deleteDir(out); //clear it ... but nicely, we are not to touch saves and such
+				Util.deleteDir(out); //clear it ... but nicely, we are not to touch saves and such
 			}
 			else if (target == 1)
 			{
@@ -80,7 +81,7 @@ public class Installer {
 				in = new File(appdir, "tmp1");
 				out = new File(appdir, "tmp2");
 				if(out.exists())
-					Patcher.deleteDirMean(out); 
+					Util.deleteDirMean(out); 
 				
 			}
 			else
@@ -89,15 +90,15 @@ public class Installer {
 				in = new File(appdir, "tmp2");
 				out = new File(appdir, "tmp1");
 				if(out.exists())
-					Patcher.deleteDirMean(out); 
+					Util.deleteDirMean(out); 
 			}
 		}
 		in = new File(appdir, "tmp2");
 		out = new File(appdir, "tmp1");
 		if(out.exists())
-			Patcher.deleteDirMean(out); 
+			Util.deleteDirMean(out); 
 		if(in.exists())
-			Patcher.deleteDirMean(in); 
+			Util.deleteDirMean(in); 
 		
 		
 		

@@ -22,7 +22,8 @@ public class Queue {
 		cachedir.mkdirs();
 		appdir.mkdirs();//won't do anything if it's not needed
 		File queuefile = new File(appdir,"queue.lst");
-		
+		if(!queuefile.exists())
+			return;
 		//thequeue = new ArrayList<Package>(); //clear it before loading - but only once we know the queue file exists
 		if(thequeue != null && thequeue.size() > 0)
 			return; //guess we don't want to reinit it...
