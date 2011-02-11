@@ -1,15 +1,12 @@
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.zip.ZipOutputStream;
 
@@ -25,6 +22,10 @@ import com.nothome.delta.Delta;
 import com.nothome.delta.DiffWriter;
 import com.nothome.delta.GDiffPatcher;
 import com.nothome.delta.GDiffWriter;
+
+import errors.patcher.FormatError;
+import errors.patcher.PatchConflict;
+
 
 /*
  * /info.properties #mod name, mod version, depends, conflicts, provides, author, so on and so forth
@@ -47,7 +48,7 @@ public class Patcher {
 
 	
 	
-	public static IEntry[][] readZip(IArchive f) throws IOException
+	public static IEntry[][] readZip(IArchive f)
 	{
 		
 		ArrayList<IEntry> files = new ArrayList<IEntry>();
@@ -56,9 +57,9 @@ public class Patcher {
 		
 		
 		
-		for (Enumeration enumer = f.entries(); enumer.hasMoreElements(); )
+		for (Enumeration<IEntry> enumer = f.entries(); enumer.hasMoreElements(); )
 		{
-			IEntry entry = (IEntry)enumer.nextElement();
+			IEntry entry = enumer.nextElement();
 			if(!Util.canTouch(entry.getName(), entry.isDirectory()))
 				continue;
 			if(entry.isDirectory())
@@ -114,10 +115,43 @@ public class Patcher {
 		
 	}
 	
-	public static boolean applypatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete)
+	public static String[] listPatch(String target, IArchive patchreader) throws FileNotFoundException, IOException
 	{
-		try
-		{
+
+		Properties deletions = new Properties();
+		Properties patches = new Properties();
+		System.out.println("getting patch names ...");
+		IEntry[][] patchcontent = readZip(patchreader);
+		
+		ArrayList<String> files = new ArrayList<String>();
+		
+		try{
+			deletions.load(patchreader.getInputStream((patchreader.getEntry(target+"/delete.properties"))));
+			patches.load(patchreader.getInputStream((patchreader.getEntry(target+"/patch/patch.properties"))));
+		} catch (NullPointerException e) { 
+			return new String[0]; //if this is reached, then the most likely cause is that the target is missing
+			                      //so just move on
+			                      //one of the properties might also be missing; just ignore that (TODO: should we ignore that?)
+		}
+
+		String[] delkeys = deletions.keySet().toArray(new String[0]);
+		String[] patchkeys = patches.keySet().toArray(new String[0]);
+		for(int i=0; i<delkeys.length; i++)
+			files.add("-"+delkeys[i]);
+		for(int i=0; i<patchkeys.length; i++)
+			files.add("~"+patchkeys[i]);
+		for(int t=0; t<2; t++) //two iteration for loop ... whoopee ...
+			for(int i=0; i<patchcontent[t].length; i++)
+				if(patchcontent[t][i].getName().startsWith(target+"/add/"))
+					files.add("+"+patchcontent[t][i].getName().substring((target+"/add/").length()));
+		return files.toArray(new String[0]);
+		
+	}
+	
+	public static void applypatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete) throws FileNotFoundException, IOException, PatchConflict, FormatError
+	{
+		//try
+		//{
 			System.out.println(target);
 			Properties deletions = new Properties();
 			Properties patches = new Properties();
@@ -128,7 +162,7 @@ public class Patcher {
 			} catch (NullPointerException e) { 
 				System.out.println("missing target "+target+" - this is probably OK - doing flat copy instead");
 				copyArchive(originalreader, output);
-				return true;
+				return;
 			}
 			
 			System.out.println("getting patch names ...");
@@ -153,15 +187,14 @@ public class Patcher {
 				if (sum.equals("directory")) continue; //should verify that it will be empty? maybe...
 				try{
 					is = originalreader.getInputStream(originalreader.getEntry(delkeys[i]));
-				} catch (FileNotFoundException e)
+				} catch (NullPointerException e)
 				{
 					System.out.println("NOTE: file to be deleted '"+delkeys[i]+"' appears to already have been removed");
 					continue;
 				}
 				if(!MD5Checksum.check(is,sum))
 				{
-					System.out.println("ERROR: MD5 for file to be deleted '"+delkeys[i]+"' does not match sum provided in patch");
-					return false;
+					throw new PatchConflict(delkeys[i], "File to be deleted '"+delkeys[i]+"' does not have md5 '"+sum+"' (target: "+target+")");
 				}
 			}
 			System.out.println("patchkeys");
@@ -171,15 +204,13 @@ public class Patcher {
 				String[] inf = patches.getProperty(patchkeys[i]).split(" ");
 				if(inf.length != 3)
 				{
-					System.out.println("ERROR: field count for patch for file '"+patchkeys[i]+"' is not three");
-					return false;
+					throw new FormatError("Field count for patch for file '"+patchkeys[i]+"' is not three (target: "+target+")");
 				}
 				try{
 					is = originalreader.getInputStream(originalreader.getEntry(patchkeys[i]));
-				} catch (FileNotFoundException e)
+				} catch (FileNotFoundException e) //rewrite the error to be a bit more useful
 				{
-					System.out.println("ERROR: file to be patched '"+patchkeys[i]+"' appears to be missing");
-					return false;
+					throw new FileNotFoundException("File to be patched '"+patchkeys[i]+"' appears to be missing (target: "+target+")");
 				}
 				String sum = MD5Checksum.make(is);
 				if (sum.equals(inf[2])) //already matches target md5 - remove from list to be patches
@@ -188,10 +219,30 @@ public class Patcher {
 				}
 				else if(!sum.equals(inf[1])) //unclean - matches neither target nor source md5, abort
 				{
-					System.out.println("ERROR: file to be patched '"+patchkeys[i]+"' does not match target or source MD5sums");
-					return false;
+					throw new PatchConflict(patchkeys[i], "File to be patched '"+patchkeys[i]+"' does not have original sum '"+inf[1]+"' or target sum '"+inf[2]+"' (target: "+target+")");
 				} //clean! do the patch
 				
+			}
+			System.out.println("check new files");
+			for(int t=0; t<patchcontent.length; t++)
+			{
+				for(int i=0; i<patchcontent[t].length; i++)
+				{
+					if( patchcontent[t][i].getName().startsWith(target+"/add/"))
+					{
+						String outname = patchcontent[t][i].getName();
+						outname = outname.substring((target+"/add/").length());
+						if(outname.length() == 0)
+							continue;
+						for(int j=0; j<incontent[t].length; j++)
+						{
+							if(incontent[t][j].getName().equals(outname))
+							{
+								throw new PatchConflict(outname, "File to be added '"+outname+"' already exists. should this have been a patch? (target: "+target+")");
+							}
+						}
+					}
+				}
 			}
 			System.out.println("INFO: all files match MD5sums, continuing with patch");
 			
@@ -309,18 +360,15 @@ public class Patcher {
 				}
 			}
 			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return true;
+		//} catch (FileNotFoundException e) {
+		//	e.printStackTrace();
+		//} catch (IOException e) {
+		//	e.printStackTrace();
+		//}
 	}
 	
-	public static void makepatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete)
+	public static void makepatch(String target, IArchive originalreader, IArchive patchreader, IDirOutputStream output, boolean dodelete) throws IOException
 	{
-		try
-		{
 			System.out.println("getting patch names ...");
 			IEntry[][] patchcontent = readZip(patchreader);
 	
@@ -506,11 +554,6 @@ public class Patcher {
 			IEntry delprop = output.makeEntry(target + "/delete.properties");
 			output.putNextEntry(delprop);
 			deletions.store(output.getOStream(), "");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 	
 	public static void main(String[] args) {
@@ -626,14 +669,14 @@ public class Patcher {
 					patchreader = new DirArchive(patch);
 				
 				
-				if(applypatch(target,inreader, patchreader, outwriter, true))
-				{
-					System.out.println("appears to have succeeded.");
-				}
-				else
-				{
-					System.out.println("drat.");
-					return;
+				try {
+					applypatch(target,inreader, patchreader, outwriter, true);
+				} catch (PatchConflict e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (FormatError e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				outwriter.close();
 				inreader.close();

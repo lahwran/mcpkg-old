@@ -1,8 +1,15 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.zip.ZipException;
 import java.util.zip.ZipOutputStream;
+
+import errors.installer.ModConflict;
+import errors.patcher.FormatError;
+import errors.patcher.PatchConflict;
 
 import targetting.DirArchive;
 import targetting.DirOutputStream;
@@ -11,7 +18,9 @@ import targetting.ZipDirOutputStream;
 
 
 public class Installer {
-	public static void run()
+
+	public static final String[] targets = new String[]{"mcjar", "main"};
+	public static void run() throws FileNotFoundException, IOException, ZipException, FormatError, ModConflict
 	{
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
@@ -23,13 +32,9 @@ public class Installer {
 		File backupdir = new File(appdir,"backups/"+Util.getMinecraftVersion());
 		if(!backupdir.exists())
 		{
-			try {
-				Util.copyFiles(minecraftdir, backupdir);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			Util.copyFiles(minecraftdir, backupdir);
 		}
+		HashMap<String, ArrayList<String>> filechanges = new HashMap<String, ArrayList<String>>();
 		
 		File in = backupdir;
 		File out = new File(appdir, "tmp1");
@@ -41,47 +46,72 @@ public class Installer {
 			System.out.println("in/ot");
 			System.out.println(in.getPath());
 			System.out.println(out.getPath());
+			if(out.exists())
+				Util.deleteDirMean(out); 
 			out.mkdirs();
-			ZipArchive patch = null;
-			try {
-				patch = new ZipArchive(new File(cachedir, Queue.thequeue.get(i).getCachename()));
-			} catch (ZipException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			Patcher.applypatch("main", new DirArchive(in), patch, new DirOutputStream(out), true);
 			
+			Package thispackage = Queue.thequeue.get(i);
+			
+			ZipArchive patch = new ZipArchive(new File(cachedir, thispackage.getCachename()));
+			String curtarget = "";
 			try {
+				
+				
+				//apply to .minecraft
+				curtarget = "main"; //for error handling, because we need to know which filechanges element to get
+				Patcher.applypatch(curtarget, new DirArchive(in), patch, new DirOutputStream(out), true);
+				
+				//then to minecraft.jar
+				curtarget = "mcjar";
 				ZipArchive a = new ZipArchive(new File(in,"bin/minecraft.jar"));
 				ZipDirOutputStream b =  new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(new File(out, "bin/minecraft.jar"))));
-				
-				Patcher.applypatch("mcjar", a, patch, b, true);
+				Patcher.applypatch(curtarget, a, patch, b, true);
 				a.close();
 				b.close();
-			} catch (ZipException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} catch (PatchConflict e) {
+				String ch = "";
+				ArrayList<String> chA = filechanges.get(curtarget+":"+e.filename);
+				if(chA == null)
+				{
+					throw new ModConflict("File '"+e.filename+"' conflicts with vanilla");
+				}
+				for(int j=0; j<chA.size(); j++)
+				{
+					if(j>0)
+						ch += " ";
+					ch += chA.get(0);
+				}
+				throw new ModConflict("File '"+e.filename+"' conflicts with previous changes: "+ch);
+			}
+			String modname = thispackage.Name;
+			for(int targetnumber=0; targetnumber<targets.length;targetnumber++)
+			{
+				String[] patchfiles = Patcher.listPatch(targets[targetnumber], patch);
+				for(int l=0; l<patchfiles.length; l++)
+				{
+					String key = targets[targetnumber];
+					key += ":";
+					key += patchfiles[l].substring(1);
+					ArrayList<String> patches = filechanges.get(key);
+					if(patches == null)
+						patches = new ArrayList<String>();
+					patches.add(patchfiles[l].substring(0,1)+modname);
+					filechanges.put(key, patches);
+				}
 			}
 			//if(true) break;
-			if(i == Queue.thequeue.size()-2) //next one is -1
+			/*if(i == Queue.thequeue.size()-2) //next one is -1
 			{
 				in = out;
 				out = minecraftdir;
 				Util.deleteDir(out); //clear it ... but nicely, we are not to touch saves and such
 			}
-			else if (target == 1)
+			else */ 
+			if (target == 1)
 			{
 				target = 2;
 				in = new File(appdir, "tmp1");
 				out = new File(appdir, "tmp2");
-				if(out.exists())
-					Util.deleteDirMean(out); 
 				
 			}
 			else
@@ -89,10 +119,14 @@ public class Installer {
 				target = 1;
 				in = new File(appdir, "tmp2");
 				out = new File(appdir, "tmp1");
-				if(out.exists())
-					Util.deleteDirMean(out); 
 			}
 		}
+		
+		in = out;
+		out = minecraftdir;
+		
+		Util.copyFilesMean(in, out);
+		
 		in = new File(appdir, "tmp2");
 		out = new File(appdir, "tmp1");
 		if(out.exists())

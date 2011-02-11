@@ -9,23 +9,26 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.zip.ZipException;
+
+import errors.installer.ModConflict;
+import errors.patcher.FormatError;
 
 //proxy class - interfaces to the package manager (gui, commandline, etc) may only use this class
 
 
 public class Commands {
 
-	public static String[] getRepos()
+	public static String[] getRepos() throws FileNotFoundException, IOException
 	{
 		Index.readrepolist();
 		return Index.mainrepos;
 	}
 	
-	public static void disableRepo(String id)
+	public static void disableRepo(String id) throws FileNotFoundException, IOException
 	{
-		Index.loadrepos();
+		Index.readrepolist();
 		ArrayList<String> lines = new ArrayList<String>();
 		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
@@ -44,54 +47,47 @@ public class Commands {
 		String lookedup = null;
 		try {
 			lookedup = Index.mainrepos[new Integer(id)];
+			Messaging.message("will search for '"+lookedup+"'");
 		} catch (NumberFormatException e){}
-		try {
-			String line = null;
-			while ((line = f3.readLine()) != null)
+		String line = null;
+		int linenumber = 0;
+		while ((line = f3.readLine()) != null)
+		{
+			if(line.equals(id) || (lookedup != null && line.equals(lookedup)))
 			{
-				if(line.equals(id) || (lookedup != null && line.equals(lookedup)))
-					lines.add("#"+line);
-				else
-					lines.add(line);
+				lines.add("#"+line);
+				Messaging.message("commented line "+linenumber);
 			}
-			
-			f3.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			else
+				lines.add(line);
+			linenumber++;
 		}
 		
+		f3.close();
 		
-		try {
-			FileOutputStream fo = new FileOutputStream(repolist);
-			
-			OutputStreamWriter osw = new OutputStreamWriter(fo);
-			
-			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
-			
-			for(int i=0; i<lines.size();i++)
-			{
-				writer.write(lines.get(i));
-				if(i<lines.size()-1)
-					writer.write("\n");
-			}
-			
-			writer.close();
-			
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		
+		FileOutputStream fo = new FileOutputStream(repolist);
+		
+		OutputStreamWriter osw = new OutputStreamWriter(fo);
+		
+		BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+		
+		for(int i=0; i<lines.size();i++)
+		{
+			writer.write(lines.get(i));
+			if(i<lines.size()-1)
+				writer.write("\n");
 		}
-		Index.loadrepos();
+		
+		writer.close();
+		
+		
+		Index.loadrepos(false);
 	}
 	
-	public static void addRepo(String id)
+	public static void addRepo(String id) throws FileNotFoundException, IOException
 	{
-		Index.loadrepos();
+		Index.loadrepos(false);
 		ArrayList<String> lines = new ArrayList<String>();
 		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
@@ -113,15 +109,18 @@ public class Commands {
 		
 		try {
 			String line = null;
+			int linenumber = 0;
 			while ((line = f3.readLine()) != null)
 			{
 				if(line.equals("#"+id))
 				{
-					lines.add(line.substring(1, line.length()));
+					lines.add(line.substring(1));
 					handled = true;
+					Messaging.message("uncommented line "+linenumber);
 				}
 				else
 					lines.add(line);
+				linenumber++;
 			}
 			
 			f3.close();
@@ -159,7 +158,7 @@ public class Commands {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Index.loadrepos();
+		Index.loadrepos(false);
 	}
 	
 	public static void cleanRepos()
@@ -174,9 +173,9 @@ public class Commands {
 		} //notice how we DON'T reload the repos
 	}
 	
-	public static Package[] queryPackages(String query)
+	public static Package[] queryPackages(String query) throws FileNotFoundException, IOException
 	{
-		Index.loadrepos();
+		Index.loadrepos(false);
 		HashMap<Package,Integer> matches = new HashMap<Package,Integer>();
 		
 		Package[] allpackages = Package.Packages.values().toArray(new Package[0]);
@@ -219,9 +218,9 @@ public class Commands {
 		return keys.toArray(new Package[0]);
 	}
 	
-	public static String[][] getSections()
+	public static String[][] getSections() throws FileNotFoundException, IOException
 	{ //TODO: should have some kind of sorting ..
-		Index.loadrepos();
+		Index.loadrepos(false);
 		String[][] Sections = new String[Index.Sections.size()][];
 		String[] keys = Index.Sections.keySet().toArray(new String[0]);
 		for(int i=0; i<keys.length; i++)
@@ -233,43 +232,48 @@ public class Commands {
 		return Sections;
 	}
 	
-	public static Package[] getPackages()
+	public static Package[] getPackages() throws FileNotFoundException, IOException
 	{
-		Index.loadrepos();
+		Index.loadrepos(false);
 		return Package.Packages.values().toArray(new Package[0]);
 	}
 	
-	public static Package getPackage(String name)
+	public static Package getPackage(String name) throws FileNotFoundException, IOException
 	{
-		Index.loadrepos(); //TODO: due to how often loadrepos is called (every time anything is needed, pretty much) it must nicely detect when everything is already loaded
+		Index.loadrepos(false); //TODO: due to how often loadrepos is called (every time anything is needed, pretty much) it must nicely detect when everything is already loaded
 		return Package.Packages.get(name);
 	}
 	
-	public static void queuePackage(String id)
+	public static void queuePackage(String id) throws FileNotFoundException, IOException
 	{
-		Index.loadrepos(); 
+		Index.loadrepos(false); 
 		Queue.readqueue();
 		Queue.queuePackage(new PackageCompare(id).get());
 	}
 	
-	public static void unqueuePackage(String id)
+	public static void unqueuePackage(String id) throws FileNotFoundException, IOException
 	{
-		Index.loadrepos(); 
+		Index.loadrepos(false); 
 		Queue.readqueue();
 		Queue.unqueuePackage(new PackageCompare(id).get());
 	}
 	
-	public static Package[] getQueue()
+	public static Package[] getQueue() throws FileNotFoundException, IOException
 	{
-		Index.loadrepos(); 
+		Index.loadrepos(false); 
 		Queue.readqueue();
 		return Queue.thequeue.toArray(new Package[0]);
 	}
 	
-	public static void run()
+	public static void run() throws FileNotFoundException, ZipException, IOException, FormatError, ModConflict
 	{
-		Index.loadrepos(); 
+		Index.loadrepos(false); 
 		Queue.readqueue();
 		Installer.run();
+	}
+	
+	public static void repoupdate() throws FileNotFoundException, IOException
+	{
+		Index.loadrepos(true); 
 	}
 }

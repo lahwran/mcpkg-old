@@ -4,11 +4,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.URL;
+import java.util.Date;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +29,7 @@ public class Index {
 		boolean FollowSubrepos;
 		boolean AddSections;
 		String Description;
+		boolean forceload;
 	}
 	
 	public static String[] splitKV(String whole)
@@ -59,7 +59,7 @@ public class Index {
 	
 	//TODO: multiple, comma-separated minecraft versions - only read in the one for the current minecraft version
 	//TODO: only read in latest version
-	public static String[][] readRepoFromStream(BufferedReader in, String[] curKV, boolean cansection, boolean cansubrepo)
+	public static String[][] readRepoFromStream(BufferedReader in, String[] curKV, boolean cansection, boolean cansubrepo, boolean forceload)
 	{
 		ArrayList<String[]> fieldcache = new ArrayList<String[]>();
 		
@@ -169,6 +169,7 @@ public class Index {
 				s.FollowSubrepos = sdata.get("FollowSubrepos") != null && sdata.get("FollowSubrepos").get(0).equalsIgnoreCase("true");
 				s.AddSections = cansection && sdata.get("AddSections") != null && sdata.get("AddSections").get(0).equalsIgnoreCase("true");
 				s.Description = sdata.get("Description").get(0);
+				s.forceload = forceload;
 				//owner is ignored?!
 				subrepos.add(s);
 			}
@@ -266,89 +267,89 @@ public class Index {
 		return comparers.toArray(new PackageCompare[0]);
 	}
 	
-	public static void cacherepo(String[][] KVs, File output)
+	public static void cacherepo(String[][] KVs, File output, long modifiedtime) throws FileNotFoundException, IOException
 	{
-		try {
-			FileOutputStream fo = new FileOutputStream(output);
-			
-			OutputStreamWriter osw = new OutputStreamWriter(fo);
-			
-			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
-			
-			for(int i=0; i< KVs.length;i++)
-			{
-				writer.write(KVs[i][0]);
-				writer.write(": ");
-				writer.write(KVs[i][1]);
-				writer.write("\n");
-			}
-			writer.close();
-			
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		FileOutputStream fo = new FileOutputStream(output);
+		
+		OutputStreamWriter osw = new OutputStreamWriter(fo);
+		
+		BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+		writer.write("DownloadTime: "+modifiedtime+"\n");
+		for(int i=0; i< KVs.length;i++)
+		{
+			writer.write(KVs[i][0]+": "+KVs[i][1]+"\n");
 		}
+		writer.close();
+			
 		
 	}
 	
-	public static void loadrepo(String repourl, boolean cansection, boolean cansubrepo )
+	public static void loadrepo(String repourl, boolean cansection, boolean cansubrepo, boolean forceload) throws FileNotFoundException, IOException
 	{ //TODO: will be slow as hell when there is no connection or 404 or such ..
-		try {
-			String cachehash = MD5Checksum.strmd5(repourl);
-			
-			File cache = new File(Util.getAppDir("mcpkg")+"/repocache/");
-			cache.mkdirs();//won't do anything if it's not needed
-			File thiscache = new File(cache,cachehash);
-			
-			
-			BufferedReader in;
-			
-			in = new BufferedReader(new InputStreamReader(Util.readURL(repourl)));
+		long curtime = new Date().getTime();
+		String cachehash = MD5Checksum.strmd5(repourl);
 		
-
-			String[] inputLine = splitKV(Util.getNextLine(in));
-			if(inputLine != null && inputLine[0].equals("IndexVersion") && thiscache.exists())
+		File cache = new File(Util.getAppDir("mcpkg")+"/repocache/");
+		cache.mkdirs();//won't do anything if it's not needed
+		File thiscache = new File(cache,cachehash);
+		BufferedReader cachereader = null;
+		String[][] cachehead = new String[2][]; //TODO: could be something other than an array, for easier comprehension
+		if(thiscache.exists())
+		{
+			cachereader = new BufferedReader(new InputStreamReader(new FileInputStream(thiscache)));
+			cachehead[0] = splitKV(Util.getNextLine(cachereader));
+			cachehead[1] = splitKV(Util.getNextLine(cachereader));
+			if(cachehead[0][0].equals("DownloadTime"))
 			{
-				//check cached copy; if it's IndexVersion matches just-read indexversion, no need to update it
-				FileInputStream f1 = new FileInputStream(thiscache);
-				InputStreamReader f2 = new InputStreamReader(f1);
-				BufferedReader f3 = new BufferedReader(f2);
-				String[] firstset = splitKV(Util.getNextLine(f3));
-				if(firstset != null && firstset[0].equals("IndexVersion") && firstset[1].equals(inputLine[1]))
+				long time = new Long(cachehead[0][1]);
+				if(curtime-time < 3600000)
 				{
-					readRepoFromStream(f3, firstset, cansection, cansubrepo);
+					readRepoFromStream(cachereader, cachehead[1], cansection, cansubrepo, forceload);
 					return;
 				}
 			}
-
-			cacherepo(readRepoFromStream(in, inputLine, cansection, cansubrepo), thiscache);
-			
-			in.close();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
+		
+		BufferedReader in;
+		
+		in = new BufferedReader(new InputStreamReader(Util.readURL(repourl)));
+	
+
+		String[] inputLine = splitKV(Util.getNextLine(in));
+		
+		if(inputLine != null && inputLine[0].equals("IndexVersion") && thiscache.exists())
+		{
+			//check cached copy; if it's IndexVersion matches just-read indexversion, no need to update it
+			String[] cacheLine = cachehead[cachehead.length-1];
+			if(cacheLine[0].equals("IndexVersion") && cacheLine[1].equals(inputLine[1]))
+			{
+				readRepoFromStream(cachereader, cacheLine, cansection, cansubrepo, forceload);
+				return;
+			}
+		}
+
+		cacherepo(readRepoFromStream(in, inputLine, cansection, cansubrepo, forceload), thiscache,curtime);
+		
+		in.close();
 	}
 	
-	public static void loadrepos()
+	public static void loadrepos(boolean forceload) throws FileNotFoundException, IOException
 	{
+		Messaging.message("Loading repositories");
 		readrepolist();
 		//TODO: needs some kind of rate limiting .. don't check more often than every 10 minutes or something 
 		for(int i=0; i<mainrepos.length; i++)
 		{
-			loadrepo(mainrepos[i], true, true);
+			loadrepo(mainrepos[i], true, true, forceload);
 		}
 		while(!subrepos.isEmpty())
 		{
 			subrepo s = subrepos.removeFirst();
-			loadrepo(s.index, s.AddSections, s.FollowSubrepos);
+			loadrepo(s.index, s.AddSections, s.FollowSubrepos, forceload);
 		}
 	}
 	public static String repolisthash = "";
-	public static void readrepolist()
+	public static void readrepolist() throws FileNotFoundException, IOException
 	{
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		appdir.mkdirs();//won't do anything if it's not needed
@@ -361,11 +362,7 @@ public class Index {
 			//currepolisthash = MD5Checksum.make(new FileInputStream(repolist));
 		} catch (FileNotFoundException e) {
 			initrepolistfile();
-			
 			return;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		//wait, how is this method of hashing more efficient than doing the normal loading in?
 		/*
@@ -392,30 +389,22 @@ public class Index {
 		//should check for old default repos
 	}
 	
-	public static void initrepolistfile()
+	public static void initrepolistfile() throws FileNotFoundException, IOException
 	{
-		try {
-			File appdir = new File(Util.getAppDir("mcpkg")+"/");
-			appdir.mkdirs();//won't do anything if it's not needed
-			File repolist = new File(appdir,"repos.lst");
-			
-			FileOutputStream fo = new FileOutputStream(repolist);
-			
-			OutputStreamWriter osw = new OutputStreamWriter(fo);
-			
-			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
-			
-			writer.write("#default repository\n"+defaultrepo);
-			
-			writer.close();
-			mainrepos = new String[]{defaultrepo};
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		File appdir = new File(Util.getAppDir("mcpkg")+"/");
+		appdir.mkdirs();//won't do anything if it's not needed
+		File repolist = new File(appdir,"repos.lst");
+		
+		FileOutputStream fo = new FileOutputStream(repolist);
+		
+		OutputStreamWriter osw = new OutputStreamWriter(fo);
+		
+		BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+		
+		writer.write("#default repository\n"+defaultrepo);
+		
+		writer.close();
+		mainrepos = new String[]{defaultrepo};
+		
 	}
 }

@@ -17,6 +17,11 @@
 #Block: more description
 #Block: even more description
 
+#following field is not allowed in repositories to be used directly, 
+#but is used in cached repos to detirmine how long it has been since that repo has last been downloaded.
+#if it has been less than one hour (configurable), the list is not updated on load.
+#represented in ms because Date.getTime() is ms and it's cleaner to use what it returns.
+UpdateTime: <ms-since-epoch>
 
 #following field is highly recommended to be first field in file
 #if the cached index version differs, then the whole file will be redownloaded and reloaded

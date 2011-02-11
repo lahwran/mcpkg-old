@@ -2,7 +2,6 @@ package targetting;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ZipDirOutputStream extends OutputStream implements

@@ -1,3 +1,10 @@
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.zip.ZipException;
+
+import errors.installer.ModConflict;
+import errors.patcher.FormatError;
+
 
 public class Main {
 
@@ -21,7 +28,16 @@ public class Main {
 						search += " ";
 					search += args[i];
 				}
-				Package[] results = Commands.queryPackages(search);
+				Package[] results = null;
+				try {
+					results = Commands.queryPackages(search);
+				} catch (FileNotFoundException e) {
+					System.out.println(e.getMessage());
+					return;
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				}
 				listPackages(results);
 			}
 			else if(args[0].equals("addrepo"))
@@ -36,7 +52,15 @@ public class Main {
 							url += " ";
 						url += args[i];
 					}
-					Commands.addRepo(url);
+					try {
+						Commands.addRepo(url);
+					} catch (FileNotFoundException e) {
+						System.out.println(e.getMessage());
+						return;
+					} catch (IOException e) {
+						e.printStackTrace();
+						return;
+					}
 				}
 				else
 				{
@@ -55,7 +79,15 @@ public class Main {
 							url += " ";
 						url += args[i];
 					}
-					Commands.disableRepo(url);
+					try {
+						Commands.disableRepo(url);
+					} catch (FileNotFoundException e) {
+						System.out.println(e.getMessage());
+						return;
+					} catch (IOException e) {
+						e.printStackTrace();
+						return;
+					}
 				}
 				else
 				{
@@ -68,7 +100,16 @@ public class Main {
 				{
 					if(args[1].equals("repos"))
 					{
-						String[] repos = Commands.getRepos();
+						String[] repos = null;
+						try {
+							repos = Commands.getRepos();
+						} catch (FileNotFoundException e) {
+							System.out.println(e.getMessage());
+							return;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return;
+						}
 						for(int i=0; i<repos.length; i++)
 						{
 							System.out.println(""+i+" "+repos[i]);
@@ -76,7 +117,16 @@ public class Main {
 					}
 					else if(args[1].equals("sections"))
 					{
-						String[][] sections = Commands.getSections();
+						String[][] sections = null;
+						try {
+							sections = Commands.getSections();
+						} catch (FileNotFoundException e) {
+							System.out.println(e.getMessage());
+							return;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return;
+						}
 						for(int i=0; i<sections.length; i++)
 						{
 							System.out.print(sections[i][0]);
@@ -89,12 +139,30 @@ public class Main {
 					}
 					else if(args[1].equals("packages"))
 					{
-						Package[] packages = Commands.getPackages();
+						Package[] packages = null;
+						try {
+							packages = Commands.getPackages();
+						} catch (FileNotFoundException e) {
+							System.out.println(e.getMessage());
+							return;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return;
+						}
 						listPackages(packages);
 					}
 					else if(args[1].equals("queue"))
 					{
-						Package[] packages = Commands.getQueue();
+						Package[] packages = null;
+						try {
+							packages = Commands.getQueue();
+						} catch (FileNotFoundException e) {
+							System.out.println(e.getMessage());
+							return;
+						} catch (IOException e) {
+							e.printStackTrace();
+							return;
+						}
 						listPackages(packages);
 					}
 				}
@@ -107,7 +175,16 @@ public class Main {
 			{
 				if(args.length >= 2)
 				{
-					Package p =  Commands.getPackage(args[1]);
+					Package p;
+					try {
+						p = Commands.getPackage(args[1]);
+					} catch (FileNotFoundException e) {
+						System.out.println(e.getMessage());
+						return;
+					} catch (IOException e) {
+						e.printStackTrace();
+						return;
+					}
 					System.out.println("Name: "+p.Name);
 					for(int i=0; i<p.Authors.length; i++)
 						System.out.println("Author: "+p.Authors[i][0]+"<"+p.Authors[i][1]+">");
@@ -147,7 +224,15 @@ public class Main {
 			{
 				if(args.length >= 2)
 				{
-					Commands.queuePackage(args[1]);
+					try {
+						Commands.queuePackage(args[1]);
+					} catch (FileNotFoundException e) {
+						System.out.println(e.getMessage());
+						return;
+					} catch (IOException e) {
+						e.printStackTrace();
+						return;
+					}
 				}
 				else
 				{
@@ -158,7 +243,15 @@ public class Main {
 			{
 				if(args.length >= 2)
 				{
-					Commands.unqueuePackage(args[1]);
+					try {
+						Commands.unqueuePackage(args[1]);
+					} catch (FileNotFoundException e) {
+						System.out.println(e.getMessage());
+						return;
+					} catch (IOException e) {
+						e.printStackTrace();
+						return;
+					}
 				}
 				else
 				{
@@ -167,7 +260,24 @@ public class Main {
 			}
 			else if(args[0].equals("run"))
 			{
-				Commands.run();
+				try {
+					Commands.run();
+				} catch (FileNotFoundException e) {
+					System.out.println(e.getMessage());
+					return;
+				} catch (ZipException e) {
+					System.out.println(e.getMessage());
+					return;
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (FormatError e) {
+					System.out.println(e.getMessage());
+					return;
+				} catch (ModConflict e) {
+					System.out.println(e.getMessage());
+					return;
+				}
 			}
 		}
 			
