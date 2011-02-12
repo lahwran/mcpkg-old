@@ -23,7 +23,7 @@ public class Messaging {
 		}
 		return null;
 	}
-	public synchronized static Confirmation confirm(String message)
+	public synchronized static Confirmation qconfirm(String message)
 	{
 		if(message == null)
 		{
@@ -36,8 +36,26 @@ public class Messaging {
 			c.question=message;
 			c.isanswered = false;
 			c.isconfirmed = false;
+			confirmations.add(c);
+			return c;
 		}
 		return null;
+	}
+	
+	public static boolean confirm(String message)
+	{
+		Confirmation c = qconfirm(message);
+		while(!c.isanswered)
+		{
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				Messaging.message("interrupt in confirmation");
+				return false;
+			}
+		}
+		return c.isconfirmed;
 	}
 	
 }

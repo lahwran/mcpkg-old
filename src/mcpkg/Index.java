@@ -340,8 +340,15 @@ public class Index {
 		in.close();
 	}
 	
+	public static long lastloadtime = 0;
 	public static void loadrepos(boolean forceload) throws FileNotFoundException, IOException
 	{
+		long curtime = new Date().getTime();
+		if(curtime-lastloadtime < 3600000)
+		{
+			return;
+		}
+		lastloadtime=curtime;
 		Messaging.message("Loading repositories");
 		readrepolist();
 		//TODO: needs some kind of rate limiting .. don't check more often than every 10 minutes or something 
@@ -354,6 +361,8 @@ public class Index {
 			subrepo s = subrepos.removeFirst();
 			loadrepo(s.index, s.AddSections, s.FollowSubrepos, forceload);
 		}
+		Queue.readqueue();
+		
 	}
 	public static String repolisthash = "";
 	public static void readrepolist() throws FileNotFoundException, IOException

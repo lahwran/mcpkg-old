@@ -31,6 +31,7 @@ public class Package {
 	
 	public String FullDescription;
 	public String ShortDescription;
+	public boolean isQueued = false;
 	
 	public static HashMap<String, Package> Packages = new HashMap<String, Package>();
 	public static HashMap<String, Package> CacheNames = new HashMap<String, Package>();

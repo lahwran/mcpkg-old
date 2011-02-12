@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,7 +21,7 @@ import mcpkg.errors.patcher.FormatError;
 //proxy class - interfaces to the package manager (gui, commandline, etc) may only use this class
 
 
-public class Commands {
+public class Commands extends Thread {
 
 	public static String[] getRepos() throws FileNotFoundException, IOException
 	{
@@ -28,132 +29,7 @@ public class Commands {
 		return Index.mainrepos;
 	}
 	
-	public static void disableRepo(String id) throws FileNotFoundException, IOException
-	{
-		Index.readrepolist();
-		ArrayList<String> lines = new ArrayList<String>();
-		
-		File appdir = new File(Util.getAppDir("mcpkg")+"/");
-		appdir.mkdirs();//won't do anything if it's not needed
-		File repolist = new File(appdir,"repos.lst");
-		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
-		FileInputStream f1 = null;
-		f1 = new FileInputStream(repolist);
-		InputStreamReader f2 = new InputStreamReader(f1);
-		BufferedReader f3 = new BufferedReader(f2);
-		String lookedup = null;
-		try {
-			lookedup = Index.mainrepos[new Integer(id)];
-			Messaging.message("will search for '"+lookedup+"'");
-		} catch (NumberFormatException e){}
-		String line = null;
-		int linenumber = 0;
-		while ((line = f3.readLine()) != null)
-		{
-			if(line.equals(id) || (lookedup != null && line.equals(lookedup)))
-			{
-				lines.add("#"+line);
-				Messaging.message("commented line "+linenumber);
-			}
-			else
-				lines.add(line);
-			linenumber++;
-		}
-		
-		f3.close();
-		
-		
-		FileOutputStream fo = new FileOutputStream(repolist);
-		
-		OutputStreamWriter osw = new OutputStreamWriter(fo);
-		
-		BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
-		
-		for(int i=0; i<lines.size();i++)
-		{
-			writer.write(lines.get(i));
-			if(i<lines.size()-1)
-				writer.write("\n");
-		}
-		
-		writer.close();
-		
-		
-		Index.loadrepos(false);
-	}
 	
-	public static void addRepo(String id) throws FileNotFoundException, IOException
-	{
-		Index.loadrepos(false);
-		ArrayList<String> lines = new ArrayList<String>();
-		
-		File appdir = new File(Util.getAppDir("mcpkg")+"/");
-		appdir.mkdirs();//won't do anything if it's not needed
-		File repolist = new File(appdir,"repos.lst");
-		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
-		FileInputStream f1 = null;
-		f1 = new FileInputStream(repolist);
-		InputStreamReader f2 = new InputStreamReader(f1);
-		BufferedReader f3 = new BufferedReader(f2);
-		
-		boolean handled = false;
-		//if it gets uncommented, we don't want to add it again at the end
-		
-		try {
-			String line = null;
-			int linenumber = 0;
-			while ((line = f3.readLine()) != null)
-			{
-				if(line.equals("#"+id))
-				{
-					lines.add(line.substring(1));
-					handled = true;
-					Messaging.message("uncommented line "+linenumber);
-				}
-				else
-					lines.add(line);
-				linenumber++;
-			}
-			
-			f3.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		if(!handled)
-		{
-			lines.add(id);
-		}
-		
-		FileOutputStream fo = new FileOutputStream(repolist);
-		
-		OutputStreamWriter osw = new OutputStreamWriter(fo);
-		
-		BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
-		
-		for(int i=0; i<lines.size();i++)
-		{
-			writer.write(lines.get(i));
-			if(i<lines.size()-1)
-				writer.write("\n");
-		}
-		
-		writer.close();
-		Index.loadrepos(false);
-	}
-	
-	public static void cleanRepos()
-	{
-		File cache = new File(Util.getAppDir("mcpkg")+"/repocache/");
-		cache.mkdirs();
-		
-		File[] files = cache.listFiles();
-		for(int i=0; i<files.length; i++)
-		{
-			files[i].delete();
-		} //notice how we DON'T reload the repos
-	}
 	
 	public static Package[] queryPackages(String query) throws FileNotFoundException, IOException
 	{
@@ -226,36 +102,431 @@ public class Commands {
 		return Package.Packages.get(name);
 	}
 	
-	public static void queuePackage(String id) throws FileNotFoundException, IOException
-	{
-		Index.loadrepos(false); 
-		Queue.readqueue();
-		Queue.queuePackage(new PackageCompare(id).get());
-	}
-	
-	public static void unqueuePackage(String id) throws FileNotFoundException, IOException
-	{
-		Index.loadrepos(false); 
-		Queue.readqueue();
-		Queue.unqueuePackage(new PackageCompare(id).get());
-	}
-	
 	public static Package[] getQueue() throws FileNotFoundException, IOException
 	{
 		Index.loadrepos(false); 
-		Queue.readqueue();
 		return Queue.thequeue.toArray(new Package[0]);
 	}
 	
-	public static void run() throws FileNotFoundException, ZipException, IOException, FormatError, ModConflict
+	public static class runInstall implements Runnable
 	{
-		Index.loadrepos(false); 
-		Queue.readqueue();
-		Installer.run();
+		public void run()
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} 
+			Queue.readqueue();
+			try {
+				Installer.run();
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (ZipException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (FormatError e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (ModConflict e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+		}
 	}
 	
-	public static void repoupdate() throws FileNotFoundException, IOException
+	public static class repoUpdate implements Runnable
 	{
-		Index.loadrepos(true); 
+		public void run()
+		{
+			try {
+				Index.loadrepos(true);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+		}
 	}
+	
+	public static class queuePackage implements Runnable
+	{
+		public Package p;
+		public queuePackage(String _id)
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			p=new PackageCompare(_id).get();
+		}
+		public queuePackage(Package _p)
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			p=_p;
+		}
+
+		public void run()
+		{
+			Queue.readqueue();
+			try {
+				Queue.queuePackage(p);
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+		}
+	}
+	
+	public static class unqueuePackage implements Runnable
+	{
+		public Package p;
+		public unqueuePackage(String _id)
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			p=new PackageCompare(_id).get();
+			if(p == null)
+				throw new IllegalArgumentException("package '"+_id+"' not found");
+		}
+		public unqueuePackage(Package _p)
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			p=_p;
+		}
+		public void run()
+		{
+			Queue.readqueue();
+			Queue.unqueuePackage(p);
+		}
+	}
+	
+	public static class delRepo implements Runnable
+	{
+		public String id;
+		public delRepo(String _id)
+		{
+			id = _id;
+		}
+		public void run()
+		{
+			try {
+				Index.readrepolist();
+			} catch (FileNotFoundException e1) {
+				Messaging.message(e1.getMessage());
+				return;
+			} catch (IOException e1) {
+				Messaging.message(e1.getMessage());
+				return;
+			}
+			ArrayList<String> lines = new ArrayList<String>();
+			
+			File appdir = new File(Util.getAppDir("mcpkg")+"/");
+			appdir.mkdirs();//won't do anything if it's not needed
+			File repolist = new File(appdir,"repos.lst");
+			//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
+			FileInputStream f1 = null;
+			try {
+				f1 = new FileInputStream(repolist);
+			} catch (FileNotFoundException e1) {
+				Messaging.message(e1.getMessage());
+				return;
+			}
+			InputStreamReader f2 = new InputStreamReader(f1);
+			BufferedReader f3 = new BufferedReader(f2);
+			String lookedup = null;
+			try {
+				lookedup = Index.mainrepos[new Integer(id)];
+				Messaging.message("will search for '"+lookedup+"'");
+			} catch (NumberFormatException e){}
+			String line = null;
+			int linenumber = 0;
+			try {
+				while ((line = f3.readLine()) != null)
+				{
+					if(line.equals(id) || (lookedup != null && line.equals(lookedup)))
+					{
+						lines.add("#"+line);
+						Messaging.message("commented line "+linenumber);
+					}
+					else
+						lines.add(line);
+					linenumber++;
+				}
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			
+			try {
+				f3.close();
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			
+			
+			FileOutputStream fo = null;
+			try {
+				fo = new FileOutputStream(repolist);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			
+			OutputStreamWriter osw = new OutputStreamWriter(fo);
+			
+			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+			
+			for(int i=0; i<lines.size();i++)
+			{
+				try {
+					writer.write(lines.get(i));
+				} catch (IOException e) {
+					Messaging.message(e.getMessage());
+					return;
+				}
+				if(i<lines.size()-1)
+					try {
+						writer.write("\n");
+					} catch (IOException e) {
+						Messaging.message(e.getMessage());
+						return;
+					}
+			}
+			
+			try {
+				writer.close();
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			
+			
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+		}
+	}
+	
+	public static class addRepo implements Runnable
+	{
+		public String id;
+		public addRepo(String _id)
+		{
+			id = _id;
+		}
+		public void run()
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e1) {
+				Messaging.message(e1.getMessage());
+				return;
+			} catch (IOException e1) {
+				Messaging.message(e1.getMessage());
+				return;
+			}
+			ArrayList<String> lines = new ArrayList<String>();
+			
+			File appdir = new File(Util.getAppDir("mcpkg")+"/");
+			appdir.mkdirs();//won't do anything if it's not needed
+			File repolist = new File(appdir,"repos.lst");
+			//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
+			FileInputStream f1 = null;
+			try {
+				f1 = new FileInputStream(repolist);
+			} catch (FileNotFoundException e1) {
+				Messaging.message(e1.getMessage());
+				return;
+			}
+			InputStreamReader f2 = new InputStreamReader(f1);
+			BufferedReader f3 = new BufferedReader(f2);
+			
+			boolean handled = false;
+			//if it gets uncommented, we don't want to add it again at the end
+			
+			try {
+				String line = null;
+				int linenumber = 0;
+				while ((line = f3.readLine()) != null)
+				{
+					if(line.equals("#"+id))
+					{
+						lines.add(line.substring(1));
+						handled = true;
+						Messaging.message("uncommented line "+linenumber);
+					}
+					else
+						lines.add(line);
+					linenumber++;
+				}
+				
+				f3.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			if(!handled)
+			{
+				lines.add(id);
+			}
+			
+			FileOutputStream fo;
+			try {
+				fo = new FileOutputStream(repolist);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			
+			OutputStreamWriter osw = new OutputStreamWriter(fo);
+			
+			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+			try {
+				for(int i=0; i<lines.size();i++)
+				{
+					
+						writer.write(lines.get(i));
+					
+					if(i<lines.size()-1)
+						writer.write("\n");
+				}
+				writer.close();
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			
+			
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+
+				Messaging.message(e.getMessage());
+				return;
+			}
+		}
+	}
+	
+	public static class cleanRepos implements Runnable
+	{
+		public void run()
+		{
+			File cache = new File(Util.getAppDir("mcpkg")+"/repocache/");
+			cache.mkdirs();
+			
+			File[] files = cache.listFiles();
+			for(int i=0; i<files.length; i++)
+			{
+				files[i].delete();
+			} //notice how we DON'T reload the repos
+		}
+	}
+	
+	public static ArrayDeque<Runnable> commandQueue = new ArrayDeque<Runnable>();
+	
+	public static synchronized Runnable queue(Runnable toqueue)
+	{
+		if(toqueue == null)
+		{
+			if(commandQueue.size() > 0)
+			{
+				return commandQueue.removeFirst();
+			}
+		}
+		else
+		{
+			clicanexit = false;
+			commandQueue.add(toqueue);
+		}
+		return null;
+	}
+	
+	public static boolean clicanexit = true;
+	
+	@Override
+	public void run() {
+		while(true)
+		{
+			Runnable r = queue(null);
+			if (r == null)
+			{
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {} //should we care about this?
+			}
+			else
+			{
+				r.run();
+				clicanexit = true; //when this is set true, the command line version exits
+			}
+		}
+	}
+	
+	public Commands()
+	{
+		super("Commands");
+		start();
+	}
+	
+	public static Commands threadinstance;
+	public static void launchthread()
+	{
+		if(threadinstance == null)
+		{
+			threadinstance = new Commands();
+			
+		}
+	}
+	
 }

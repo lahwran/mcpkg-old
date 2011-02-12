@@ -1,6 +1,8 @@
 package mcpkg;
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.zip.ZipException;
 
@@ -22,6 +24,7 @@ public class Main {
 			System.out.println("in future versions, this will launch the gui. \nfor now, please refer to the instructions as to usage.");
 		else if(args.length >= 1) //what else would it be at this point?
 		{
+			Commands.launchthread();
 			if(args[0].equals("search"))
 			{
 				String search = ""; //should have a way to search for keywords instead of regexes
@@ -56,15 +59,7 @@ public class Main {
 							url += " ";
 						url += args[i];
 					}
-					try {
-						Commands.addRepo(url);
-					} catch (FileNotFoundException e) {
-						System.out.println(e.getMessage());
-						return;
-					} catch (IOException e) {
-						e.printStackTrace();
-						return;
-					}
+					Commands.queue(new Commands.addRepo(url));
 				}
 				else
 				{
@@ -83,15 +78,8 @@ public class Main {
 							url += " ";
 						url += args[i];
 					}
-					try {
-						Commands.disableRepo(url);
-					} catch (FileNotFoundException e) {
-						System.out.println(e.getMessage());
-						return;
-					} catch (IOException e) {
-						e.printStackTrace();
-						return;
-					}
+
+					Commands.queue(new Commands.delRepo(url));
 				}
 				else
 				{
@@ -189,20 +177,20 @@ public class Main {
 						e.printStackTrace();
 						return;
 					}
-					System.out.println("Name: "+p.Name);
+					Messaging.message("Name: "+p.Name);
 					for(int i=0; i<p.Authors.length; i++)
-						System.out.println("Author: "+p.Authors[i][0]+"<"+p.Authors[i][1]+">");
+						Messaging.message("Author: "+p.Authors[i][0]+"<"+p.Authors[i][1]+">");
 					if(p.Homepage != null)
-						System.out.println("Homepage: "+p.Homepage);
-					System.out.println("Section: "+p.Section);
-					System.out.println("MCVersion: "+p.MCVersion);
-					System.out.println("Version: "+p.Version);
-					System.out.println("PackageURL: "+p.PackageURL);
+						Messaging.message("Homepage: "+p.Homepage);
+					Messaging.message("Section: "+p.Section);
+					Messaging.message("MCVersion: "+p.MCVersion);
+					Messaging.message("Version: "+p.Version);
+					Messaging.message("PackageURL: "+p.PackageURL);
 					if(p.LatestChangelog != null)
-						System.out.println("LatestChangeLog: "+p.LatestChangelog);
+						Messaging.message("LatestChangeLog: "+p.LatestChangelog);
 					if(p.CacheName != null)
-						System.out.println("CacheName: "+p.CacheName);
-					System.out.println("Description: "+p.FullDescription);
+						Messaging.message("CacheName: "+p.CacheName);
+					Messaging.message("Description: "+p.FullDescription);
 					//TODO: uh, this doesn't list relationships and it should
 				}
 				else
@@ -216,7 +204,7 @@ public class Main {
 				{
 					if(args[1].equals("repos"))
 					{
-						Commands.cleanRepos();
+						Commands.queue(new Commands.cleanRepos());
 					}
 				}
 				else
@@ -228,15 +216,7 @@ public class Main {
 			{
 				if(args.length >= 2)
 				{
-					try {
-						Commands.queuePackage(args[1]);
-					} catch (FileNotFoundException e) {
-						System.out.println(e.getMessage());
-						return;
-					} catch (IOException e) {
-						e.printStackTrace();
-						return;
-					}
+					Commands.queue(new Commands.queuePackage(args[1]));
 				}
 				else
 				{
@@ -247,15 +227,7 @@ public class Main {
 			{
 				if(args.length >= 2)
 				{
-					try {
-						Commands.unqueuePackage(args[1]);
-					} catch (FileNotFoundException e) {
-						System.out.println(e.getMessage());
-						return;
-					} catch (IOException e) {
-						e.printStackTrace();
-						return;
-					}
+					Commands.queue(new Commands.unqueuePackage(args[1]));
 				}
 				else
 				{
@@ -264,34 +236,70 @@ public class Main {
 			}
 			else if(args[0].equals("run"))
 			{
-				try {
-					Commands.run();
-				} catch (FileNotFoundException e) {
-					System.out.println(e.getMessage());
-					return;
-				} catch (ZipException e) {
-					System.out.println(e.getMessage());
-					return;
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (FormatError e) {
-					System.out.println(e.getMessage());
-					return;
-				} catch (ModConflict e) {
-					System.out.println(e.getMessage());
-					return;
-				}
+				Commands.queue(new Commands.runInstall());
 			}
 		}
-			
+		BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+		while(!Commands.clicanexit || Messaging.messages.size() > 0 || Messaging.confirmations.size() > 0)
+		{
+			String m = Messaging.message(null);
+			Confirmation c = Messaging.qconfirm(null);
+			if(m == null && c == null)
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			else 
+			{
+				if (m != null)
+				{
+					System.out.println(m);
+				}
+				if (c != null)
+				{
+					System.out.println(c.question);
+					String response = "skip";
+					while(true)
+					{
+						System.out.print("Confirm? "+(c.isconfirmed?"[Y/n]":"[y/N]")+" ");
+						try {
+							response = stdin.readLine();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						if(response.toLowerCase().startsWith("y"))
+						{
+							c.isconfirmed = true;
+							c.isanswered = true;
+							break;
+						}
+						else if (response.toLowerCase().startsWith("n"))
+						{
+							c.isconfirmed = false;
+							c.isanswered = true;
+							break;
+						}
+						else if (response.equals(""))
+						{
+							c.isanswered = true;
+							break;
+						}
+					}
+				}
+			}
+				
+		}
+		Runtime.getRuntime().exit(0);
 	}
 	public static void listPackages(Package[] list)
 	{
 		for(int i=0; i<list.length; i++)
 		{
 			Package p = list[i];
-			System.out.println(p.Name + " - " + p.ShortDescription);
+			Messaging.message(p.Name + " - " + p.ShortDescription);
 		}
 	}
 
