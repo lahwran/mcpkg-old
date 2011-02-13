@@ -37,7 +37,7 @@ public class GuiMessagingThread extends Thread {
 	}
 	public final class refresh implements Runnable {
 		public void run() {
-			main.packageListModel.set(null);
+			//main.packageListModel.set(null);
 			main.calcList();
 			main.updatePackageView();
 		}
@@ -65,7 +65,7 @@ public class GuiMessagingThread extends Thread {
 			if(Commands.clicanexit)
 			{
 				Commands.clicanexit = false;
-				SwingUtilities.invokeLater(new statusUpdate(m));
+				SwingUtilities.invokeLater(new refresh());
 			}
 			//System.out.println("messaging "+new Date().getTime());
 			if(m == null && c == null)

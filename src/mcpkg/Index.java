@@ -20,7 +20,7 @@ public class Index {
 
 	public static String[] mainrepos;
 	//public static final String defaultrepo = "file:///home/blendmaster/workspace/Patcher/testindex";
-	public static final String defaultrepo = "http://dl.dropbox.com/u/16327181/mcpkg/001index";
+	public static final String defaultrepo = "http://dl.dropbox.com/u/16327181/mcpkg/002index";
 	
 	public static HashMap<String, String> Sections = new HashMap<String, String>();
 	public static ArrayDeque<subrepo> subrepos = new ArrayDeque<subrepo>();
@@ -340,12 +340,12 @@ public class Index {
 		in.close();
 	}
 	
-	//public static boolean haveloaded = false;
+	public static boolean haveloaded = false;
 	public static void loadrepos(boolean forceload) throws FileNotFoundException, IOException
 	{
-		//if(haveloaded)
-		//	return;
-		//h/aveloaded = true;
+		if(haveloaded)
+			return;
+		haveloaded = true;
 		if(Package.Packages.size() > 0)
 		{
 			String[] keys = Package.Packages.keySet().toArray(new String[0]);

@@ -53,7 +53,7 @@ public class Dependency {
 			for(int i=0; i<node.Depends.length; i++)
 			{
 				Package p = node.Depends[i].get();
-				if(!resolved.contains(p))
+				if(!resolved.contains(p) && !originalstate.contains(p))
 				{
 					if(unresolved.contains(p))
 						continue;

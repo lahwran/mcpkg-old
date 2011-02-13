@@ -5,40 +5,59 @@ import java.awt.FlowLayout;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.JLabel;
 import javax.swing.BoxLayout;
 import javax.swing.JTextField;
+
+import mcpkg.Messaging;
+import mcpkg.Patcher;
+import mcpkg.Util;
+import mcpkg.targetting.DirArchive;
+import mcpkg.targetting.IArchive;
+import mcpkg.targetting.IDirOutputStream;
+import mcpkg.targetting.ZipArchive;
+import mcpkg.targetting.ZipDirOutputStream;
+
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.zip.ZipException;
+import java.util.zip.ZipOutputStream;
 
-public class MakePackage extends JDialog {
+public class MakePackage extends JDialog implements ActionListener {
 
 	private final JPanel contentPanel = new JPanel();
-	private JTextField textField;
-	private JTextField textField_1;
-	private JTextField textField_2;
-	private JTextField textField_3;
-	private JTextField textField_4;
+	private JTextField fieldMainOrig;
+	private JTextField fieldMainPatch;
+	private JTextField fieldMcjarOrig;
+	private JTextField fieldMcjarPatch;
+	private JTextField fieldOutput;
+	private JButton okButton;
+	private JButton cancelButton;
+	public Gui maingui;
+	private JButton browseOutput;
+	private JButton browseMcjarPatch;
+	private JButton browseMcjarOrig;
+	private JButton browseMainPatch;
+	private JButton browseMainOrig;
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		try {
-			MakePackage dialog = new MakePackage();
-			dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-			dialog.setVisible(true);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * Create the dialog.
+	 * @param gui 
+	 * @param fileChooser 
 	 */
-	public MakePackage() {
+	public MakePackage(Gui _gui) {
+		maingui=_gui;
 		setModal(true);
 		setTitle("Make a Package");
 		setBounds(100, 100, 450, 300);
@@ -67,16 +86,17 @@ public class MakePackage extends JDialog {
 						main_orig.add(lblminecraftOriginal);
 					}
 					{
-						textField = new JTextField();
-						textField.setMaximumSize(new Dimension(2147483647, 28));
-						textField.setMinimumSize(new Dimension(200, 28));
-						textField.setPreferredSize(new Dimension(150, 28));
-						main_orig.add(textField);
-						textField.setColumns(10);
+						fieldMainOrig = new JTextField();
+						fieldMainOrig.setMaximumSize(new Dimension(2147483647, 28));
+						fieldMainOrig.setMinimumSize(new Dimension(200, 28));
+						fieldMainOrig.setPreferredSize(new Dimension(150, 28));
+						main_orig.add(fieldMainOrig);
+						fieldMainOrig.setColumns(10);
 					}
 					{
-						JButton btnBrowse = new JButton("Browse..");
-						main_orig.add(btnBrowse);
+						browseMainOrig = new JButton("Browse..");
+						browseMainOrig.addActionListener(this);
+						main_orig.add(browseMainOrig);
 					}
 				}
 				{
@@ -88,14 +108,15 @@ public class MakePackage extends JDialog {
 						main_patch.add(lbloptionalminecraftPatch);
 					}
 					{
-						textField_1 = new JTextField();
-						textField_1.setMaximumSize(new Dimension(2147483647, 28));
-						main_patch.add(textField_1);
-						textField_1.setColumns(10);
+						fieldMainPatch = new JTextField();
+						fieldMainPatch.setMaximumSize(new Dimension(2147483647, 28));
+						main_patch.add(fieldMainPatch);
+						fieldMainPatch.setColumns(10);
 					}
 					{
-						JButton btnBrowse_1 = new JButton("Browse..");
-						main_patch.add(btnBrowse_1);
+						browseMainPatch = new JButton("Browse..");
+						browseMainPatch.addActionListener(this);
+						main_patch.add(browseMainPatch);
 					}
 				}
 				{
@@ -107,14 +128,15 @@ public class MakePackage extends JDialog {
 						mcjar_orig.add(lblMinecraftjarOriginal);
 					}
 					{
-						textField_2 = new JTextField();
-						textField_2.setMaximumSize(new Dimension(2147483647, 28));
-						mcjar_orig.add(textField_2);
-						textField_2.setColumns(10);
+						fieldMcjarOrig = new JTextField();
+						fieldMcjarOrig.setMaximumSize(new Dimension(2147483647, 28));
+						mcjar_orig.add(fieldMcjarOrig);
+						fieldMcjarOrig.setColumns(10);
 					}
 					{
-						JButton btnBrowse_2 = new JButton("Browse..");
-						mcjar_orig.add(btnBrowse_2);
+						browseMcjarOrig = new JButton("Browse..");
+						browseMcjarOrig.addActionListener(this);
+						mcjar_orig.add(browseMcjarOrig);
 					}
 				}
 				{
@@ -126,14 +148,15 @@ public class MakePackage extends JDialog {
 						mcjar_patch.add(lbloptionalMinecraftjarPatch);
 					}
 					{
-						textField_3 = new JTextField();
-						textField_3.setMaximumSize(new Dimension(200000000, 28));
-						mcjar_patch.add(textField_3);
-						textField_3.setColumns(10);
+						fieldMcjarPatch = new JTextField();
+						fieldMcjarPatch.setMaximumSize(new Dimension(200000000, 28));
+						mcjar_patch.add(fieldMcjarPatch);
+						fieldMcjarPatch.setColumns(10);
 					}
 					{
-						JButton btnBrowse_3 = new JButton("Browse..");
-						mcjar_patch.add(btnBrowse_3);
+						browseMcjarPatch = new JButton("Browse..");
+						browseMcjarPatch.addActionListener(this);
+						mcjar_patch.add(browseMcjarPatch);
 					}
 				}
 			}
@@ -155,14 +178,15 @@ public class MakePackage extends JDialog {
 					panel_1.add(lblOutputPackage);
 				}
 				{
-					textField_4 = new JTextField();
-					textField_4.setMaximumSize(new Dimension(2147483647, 28));
-					panel_1.add(textField_4);
-					textField_4.setColumns(10);
+					fieldOutput = new JTextField();
+					fieldOutput.setMaximumSize(new Dimension(2147483647, 28));
+					panel_1.add(fieldOutput);
+					fieldOutput.setColumns(10);
 				}
 				{
-					JButton btnBrowse_4 = new JButton("Browse..");
-					panel_1.add(btnBrowse_4);
+					browseOutput = new JButton("Browse..");
+					browseOutput.addActionListener(this);
+					panel_1.add(browseOutput);
 				}
 			}
 		}
@@ -171,16 +195,123 @@ public class MakePackage extends JDialog {
 			getContentPane().add(buttonPane, BorderLayout.SOUTH);
 			buttonPane.setLayout(new GridLayout(0, 2, 0, 0));
 			{
-				JButton okButton = new JButton("OK");
-				okButton.setActionCommand("OK");
+				okButton = new JButton("OK");
+				okButton.addActionListener(this);
 				buttonPane.add(okButton);
-				getRootPane().setDefaultButton(okButton);
 			}
 			{
-				JButton cancelButton = new JButton("Cancel");
-				cancelButton.setActionCommand("Cancel");
+				cancelButton = new JButton("Cancel");
+				cancelButton.addActionListener(this);
 				buttonPane.add(cancelButton);
+				getRootPane().setDefaultButton(cancelButton);
 			}
+		}
+		fieldMainOrig.setText(Util.getAppDir("minecraft"));
+		fieldMcjarOrig.setText(Util.getAppDir("minecraft")+"bin/minecraft.jar");
+	}
+
+	@Override
+	public void setVisible(boolean flag)
+	{
+		super.setVisible(flag);
+			if(fieldMainOrig.getText().equals(""))
+			{
+				fieldMainOrig.setText(Util.getAppDir("minecraft"));
+			}
+			if(fieldMcjarOrig.getText().equals(""))
+			{
+				fieldMcjarOrig.setText(Util.getAppDir("minecraft")+"bin/minecraft.jar");
+			}
+	}
+
+	
+	@Override
+	public void actionPerformed(ActionEvent arg0) {
+		HashMap<JButton,JTextField> s=new HashMap<JButton,JTextField>();
+		s.put(browseMainOrig, fieldMainOrig);
+		s.put(browseMainPatch, fieldMainPatch);
+		s.put(browseMcjarOrig, fieldMcjarOrig);
+		s.put(browseMcjarPatch, fieldMcjarPatch);
+		s.put(browseOutput, fieldOutput);
+		if(arg0.getSource() == cancelButton)
+		{
+			setVisible(false);
+		}
+		else if(arg0.getSource() == okButton)
+		{
+			runIt();
+		}
+		else if(s.containsKey(arg0.getSource()))
+		{
+			int rVal;
+			if(arg0.getSource() == browseOutput)
+			{
+				rVal = maingui.fileChooser.showSaveDialog(maingui.frmMcpkg);
+			}
+			else
+			{
+				rVal = maingui.fileChooser.showOpenDialog(maingui.frmMcpkg);
+			}
+			if (rVal == JFileChooser.APPROVE_OPTION) 
+			{
+				s.get(arg0.getSource()).setText(maingui.fileChooser.getSelectedFile().getAbsolutePath());
+				//dir.setText(c.getCurrentDirectory().toString());
+			}
+		}
+	}
+	
+	public void runIt()
+	{
+		try{
+			File minecraftdir = new File(fieldMainOrig.getText());
+			
+			File mainPatch = null;
+			if (!fieldMainPatch.getText().equals(""))
+				mainPatch = new File(fieldMainPatch.getText());
+			
+			File mcjarPatch = null;
+			if (!fieldMcjarPatch.getText().equals(""))
+				mcjarPatch = new File(fieldMcjarPatch.getText());
+			
+			IArchive patchreader = null;
+			
+			
+			File altered = new File(fieldOutput.getText());
+			IDirOutputStream outwriter;
+			outwriter = new ZipDirOutputStream(new ZipOutputStream(new FileOutputStream(altered)));
+			
+			IArchive inreader = new DirArchive(minecraftdir);
+			
+			
+			if(mainPatch != null)
+			{
+				if(mainPatch.isFile())
+					patchreader = new ZipArchive(mainPatch);
+				else
+					patchreader = new DirArchive(mainPatch);
+				Patcher.makepatch("main",inreader, patchreader, outwriter, false);
+				patchreader.close();
+			}
+			
+			
+			if(mcjarPatch != null)
+			{
+				if(mcjarPatch.isFile())
+					patchreader = new ZipArchive(mcjarPatch);
+				else
+					patchreader = new DirArchive(mcjarPatch);
+				Patcher.makepatch("mcjar",new ZipArchive(new File(fieldMcjarOrig.getText())), patchreader, outwriter, false);
+				patchreader.close();
+			}
+			outwriter.close();
+			inreader.close();
+			Messaging.message("Packaged file at "+fieldOutput.getText());
+			setVisible(false);
+		}catch(Throwable e)
+		{
+			e.printStackTrace();
+			Messaging.message(e.getClass().getSimpleName()+": "+e.getMessage());
+			return;
 		}
 	}
 

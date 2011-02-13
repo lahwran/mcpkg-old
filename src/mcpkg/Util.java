@@ -35,7 +35,7 @@ public class Util {
 	    }
 	    else if (os.contains("mac"))
 	    {
-	        return s1+"Library/Application Support/"+d+"/";
+	        return s1+"/Library/Application Support/"+d+"/";
 	    }
 	    
 	    else

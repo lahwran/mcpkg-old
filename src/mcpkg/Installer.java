@@ -24,6 +24,8 @@ public class Installer {
 	public static final String[] targets = new String[]{"mcjar", "main"};
 	public static void run() throws FileNotFoundException, IOException, ZipException, FormatError, ModConflict
 	{
+
+		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
 		cachedir.mkdirs();
@@ -34,6 +36,7 @@ public class Installer {
 		File backupdir = new File(appdir,"backups/"+Util.getMinecraftVersion());
 		if(!backupdir.exists())
 		{
+			Messaging.message("Making backup ...");
 			Util.copyFiles(minecraftdir, backupdir);
 		}
 		HashMap<String, ArrayList<String>> filechanges = new HashMap<String, ArrayList<String>>();
@@ -102,36 +105,45 @@ public class Installer {
 					filechanges.put(key, patches);
 				}
 			}
-			//if(true) break;
-			/*if(i == Queue.thequeue.size()-2) //next one is -1
+			if(i+1 < Queue.thequeue.size()) //we don't want to swap them if we're done, because we still have to apply it to .minecraft
 			{
-				in = out;
-				out = minecraftdir;
-				Util.deleteDir(out); //clear it ... but nicely, we are not to touch saves and such
-			}
-			else */ 
-			if (target == 1)
-			{
-				target = 2;
-				in = new File(appdir, "tmp1");
-				out = new File(appdir, "tmp2");
-				
-			}
-			else
-			{
-				target = 1;
-				in = new File(appdir, "tmp2");
-				out = new File(appdir, "tmp1");
+				if (target == 1)
+				{
+					target = 2;
+					in = new File(appdir, "tmp1");
+					out = new File(appdir, "tmp2");
+					
+				}
+				else
+				{
+					target = 1;
+					in = new File(appdir, "tmp2");
+					out = new File(appdir, "tmp1");
+				}
 			}
 		}
 		
-		in = out;
-		out = minecraftdir;
-		
+		if(Queue.thequeue.size() == 0)
+		{
+			Messaging.message("No mods in queue...");
+			out = minecraftdir;
+		}
+		else
+		{
+			in = out;
+			out = minecraftdir;
+		}
+		System.out.println("about to finalize");
+		System.out.println("in/ot");
+		System.out.println(in.getPath());
+		System.out.println(out.getPath());
 		Util.copyFilesMean(in, out);
-		
 		in = new File(appdir, "tmp2");
 		out = new File(appdir, "tmp1");
+		System.out.println("about to clean up");
+		System.out.println("in/ot");
+		System.out.println(in.getPath());
+		System.out.println(out.getPath());
 		if(out.exists())
 			Util.deleteDirMean(out); 
 		if(in.exists())

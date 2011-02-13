@@ -188,8 +188,7 @@ public class Main {
 					Messaging.message("PackageURL: "+p.PackageURL);
 					if(p.LatestChangelog != null)
 						Messaging.message("LatestChangeLog: "+p.LatestChangelog);
-					if(p.CacheName != null)
-						Messaging.message("CacheName: "+p.CacheName);
+					Messaging.message("CacheName: "+p.getCachename());
 					Messaging.message("Description: "+p.FullDescription);
 					//TODO: uh, this doesn't list relationships and it should
 				}

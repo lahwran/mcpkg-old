@@ -119,20 +119,22 @@ public class Queue {
 	
 	public static void queuePackage(Package p) throws IOException
 	{
-		p=Package.revive(p);
-		writequeue();
-		readqueue(); //will clean the queue if there are corrupt packages
+		//p=Package.revive(p);
+		//writequeue();
+		//readqueue(); //will clean the queue if there are corrupt packages
 		
 		if(!isclean())
 			throw new IllegalArgumentException("unclean!");
 		
 		ArrayList<Package> toremove = new ArrayList<Package>();
 		ArrayList<Package> toinstall = new ArrayList<Package>();
+		//toinstall.add()
 		
 		try {
 			Dependency.resolve(p, thequeue, toinstall, toremove);
-		} catch (UnsolvableConflict e) {
+		} catch (Throwable e) {
 			Messaging.message("ERROR: "+e.getMessage());
+			e.printStackTrace();
 			return;
 		}
 		StringBuilder s = new StringBuilder();

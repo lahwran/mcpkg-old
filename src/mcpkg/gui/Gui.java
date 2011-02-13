@@ -21,6 +21,8 @@ import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
+
+import javax.swing.JFileChooser;
 import javax.swing.JSplitPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -99,21 +101,23 @@ public class Gui implements ActionListener, ListSelectionListener {
 		}
 	}
 
-	private JFrame frmMcpkg;
-	private JTextField textField;
-	private JTextField searchBox;
+	public JFrame frmMcpkg;
+	public JTextField textField;
+	public JTextField searchBox;
 
 	public PackageListModel packageListModel;
-	private JComboBox sectionBox;
-	private JButton btnRunMinecraft;
-	private JToggleButton tglbtnShowQueue;
-	private JButton btnQueueOrUnqueue;
-	private JLabel lblPackageName;
-	private JButton btnMakePackage;
-	private JButton btnManageRepos;
-	private JLabel lblStatus;
-	private JTextPane txtpnPackageDescription;
-	private JList packageList;
+	public JComboBox sectionBox;
+	public JButton btnRunMinecraft;
+	public JToggleButton tglbtnShowQueue;
+	public JButton btnQueueOrUnqueue;
+	public JLabel lblPackageName;
+	public JButton btnMakePackage;
+	public JButton btnOptions;
+	public JLabel lblStatus;
+	public JTextPane txtpnPackageDescription;
+	public JList packageList;
+	public MakePackage dlgMakePackage;
+	public JFileChooser fileChooser;
 	
 	public void calcList()
 	{
@@ -204,9 +208,14 @@ public class Gui implements ActionListener, ListSelectionListener {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
+		try {
+		    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			System.out.println("lf2");
+		} catch (Throwable ex2) {
+		}
 		frmMcpkg = new JFrame();
 		frmMcpkg.setTitle("mcpkg");
-		frmMcpkg.setBounds(100, 100, 594, 460);
+		frmMcpkg.setBounds(100, 100, 822, 560);
 		frmMcpkg.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmMcpkg.getContentPane().setLayout(new BorderLayout(0, 0));
 		
@@ -222,15 +231,16 @@ public class Gui implements ActionListener, ListSelectionListener {
 		statusPane.add(lblStatus, BorderLayout.WEST);
 		
 		btnMakePackage = new JButton("Make Package ..");
+		btnMakePackage.addActionListener(this);
 		statusPane.add(btnMakePackage, BorderLayout.EAST);
 		
 		JPanel panel = new JPanel();
 		statusPane.add(panel, BorderLayout.CENTER);
 		panel.setLayout(new BorderLayout(0, 0));
 		
-		btnManageRepos = new JButton("Manage Repos...");
-		btnManageRepos.setEnabled(false);
-		panel.add(btnManageRepos, BorderLayout.EAST);
+		btnOptions = new JButton("Options...");
+		btnOptions.setEnabled(false);
+		panel.add(btnOptions, BorderLayout.EAST);
 		
 		JSplitPane selectionPane = new JSplitPane();
 		selectionPane.setDividerLocation(1.0);
@@ -252,7 +262,6 @@ public class Gui implements ActionListener, ListSelectionListener {
 		
 		txtpnPackageDescription = new JTextPane();
 		txtpnPackageDescription.setEditable(false);
-		txtpnPackageDescription.setOpaque(false);
 		btnQueueOrUnqueue.setVisible(false);
 		btnQueueOrUnqueue.addActionListener(this);
 		packageDescScroller.setViewportView(txtpnPackageDescription);
@@ -333,24 +342,11 @@ public class Gui implements ActionListener, ListSelectionListener {
 		tglbtnShowQueue = new JToggleButton("Show Queue");
 		tglbtnShowQueue.addActionListener(this);
 		pkglistHeader.add(tglbtnShowQueue, BorderLayout.EAST);
-
 		
-		/*try {
-			//UIManager.setLookAndFeel(UIManager.)
-		    UIManager.setLookAndFeel(
-		        UIManager.getSystemLookAndFeelClassName());
-		} catch (UnsupportedLookAndFeelException ex) {
-		  System.out.println("Unable to load native look and feel");
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+		fileChooser = new JFileChooser();
+		dlgMakePackage = new MakePackage(this);
+		
+		
 		
 		calcList();
 		GuiMessagingThread g = new GuiMessagingThread(lblStatus, frmMcpkg, this);
@@ -397,6 +393,22 @@ public class Gui implements ActionListener, ListSelectionListener {
 		else if(arg0.getSource() == btnRunMinecraft)
 		{
 			Commands.queue(new Commands.runMinecraft());
+		}
+		else if(arg0.getSource() == btnMakePackage)
+		{
+			
+			
+		      /*int rVal = c.showSaveDialog(FileChooserTest.this);
+		      if (rVal == JFileChooser.APPROVE_OPTION) {
+		        filename.setText(c.getSelectedFile().getName());
+		        dir.setText(c.getCurrentDirectory().toString());
+		      }
+		      if (rVal == JFileChooser.CANCEL_OPTION) {
+		        filename.setText("You pressed cancel");
+		        dir.setText("");
+		      }*/
+			
+			dlgMakePackage.setVisible(true);
 		}
 			
 	}
