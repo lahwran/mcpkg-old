@@ -340,16 +340,25 @@ public class Index {
 		in.close();
 	}
 	
-	public static long lastloadtime = 0;
+	//public static boolean haveloaded = false;
 	public static void loadrepos(boolean forceload) throws FileNotFoundException, IOException
 	{
-		long curtime = new Date().getTime();
-		if(curtime-lastloadtime < 3600000)
+		//if(haveloaded)
+		//	return;
+		//h/aveloaded = true;
+		if(Package.Packages.size() > 0)
 		{
-			return;
+			String[] keys = Package.Packages.keySet().toArray(new String[0]);
+			for(int i=0; i<keys.length; i++)
+			{
+				Package p = Package.Packages.get(keys[i]);
+				p.isCorrupt = true;
+				Package.Packages.remove(i);
+			}
+			Package.Packages = new HashMap<String, Package>();
+			Package.CacheNames = new HashMap<String, Package>();
 		}
-		lastloadtime=curtime;
-		Messaging.message("Loading repositories");
+		//Messaging.message("Loading repositories");
 		readrepolist();
 		//TODO: needs some kind of rate limiting .. don't check more often than every 10 minutes or something 
 		for(int i=0; i<mainrepos.length; i++)
@@ -361,6 +370,9 @@ public class Index {
 			subrepo s = subrepos.removeFirst();
 			loadrepo(s.index, s.AddSections, s.FollowSubrepos, forceload);
 		}
+		if(Queue.thequeue!=null)
+			Queue.writequeue();
+			
 		Queue.readqueue();
 		
 	}

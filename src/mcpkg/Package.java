@@ -33,6 +33,9 @@ public class Package {
 	public String ShortDescription;
 	public boolean isQueued = false;
 	
+	public boolean isCorrupt = false; //a package object is 'corrupt' after the repository has been reloaded live and a reference to the package existed outside the repository.
+	                                  //when this happens, the systems that own the reference must be informed to get rid of the package reference.
+	
 	public static HashMap<String, Package> Packages = new HashMap<String, Package>();
 	public static HashMap<String, Package> CacheNames = new HashMap<String, Package>();
 	
@@ -97,5 +100,27 @@ public class Package {
 			if (fin != null) { fin.close(); }
 			if (fout != null) { fout.close(); }
 		}
+	}
+	
+	@Override
+	public boolean equals(Object _p)
+	{
+		Package p = (Package) _p;
+		return getCachename().equals(p.getCachename());
+	}
+	public static Package revive(Package p)
+	{
+		Package[] packages=Package.Packages.values().toArray(new Package[0]);
+		for(int i=0; i<packages.length; i++)
+		{
+			packages[i].getCachename(); //generate cache names that haven't been
+		}
+		for(int i=0;i<packages.length; i++)
+		{
+			if(packages[i].getCachename().equals(p.getCachename()))
+				return packages[i];
+			
+		}
+		throw new IllegalArgumentException("could not revive hash "+p.getCachename()+" from package "+p.Name);
 	}
 }

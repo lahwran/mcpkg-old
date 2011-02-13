@@ -44,6 +44,7 @@ public class Installer {
 		//TODO: I think this will break when no packages are selected?
 		for(int i=0; i<Queue.thequeue.size(); i++)
 		{
+			Messaging.message(Queue.thequeue.get(i).Name+"...");
 			System.out.println("about to install: "+Queue.thequeue.get(i).Name);
 			System.out.println("in/ot");
 			System.out.println(in.getPath());

@@ -56,7 +56,9 @@ public class Gui implements ActionListener, ListSelectionListener {
 		
 		public Object getElementAt(int index) {
 			Package p = packageListValues[index];
-			return p.Name+" - "+p.ShortDescription;
+			if(p.isCorrupt)
+				calcList();
+			return (p.isQueued?"-":" ")+" "+p.Name+" - "+p.ShortDescription;
 		}
 		ArrayList<ListDataListener> listeners = new ArrayList<ListDataListener>();
 		@Override
@@ -117,6 +119,7 @@ public class Gui implements ActionListener, ListSelectionListener {
 	{
 		//ArrayList<Package> templist = new ArrayList<Package>(); //arraylists are great array builders
 		Package[] mp = null;
+		
 		if(tglbtnShowQueue.isSelected())
 		{
 			try {
@@ -208,6 +211,7 @@ public class Gui implements ActionListener, ListSelectionListener {
 		frmMcpkg.getContentPane().setLayout(new BorderLayout(0, 0));
 		
 		btnRunMinecraft = new JButton("Run Minecraft");
+		btnRunMinecraft.addActionListener(this);
 		frmMcpkg.getContentPane().add(btnRunMinecraft, BorderLayout.NORTH);
 		
 		JPanel statusPane = new JPanel();
@@ -249,6 +253,8 @@ public class Gui implements ActionListener, ListSelectionListener {
 		txtpnPackageDescription = new JTextPane();
 		txtpnPackageDescription.setEditable(false);
 		txtpnPackageDescription.setOpaque(false);
+		btnQueueOrUnqueue.setVisible(false);
+		btnQueueOrUnqueue.addActionListener(this);
 		packageDescScroller.setViewportView(txtpnPackageDescription);
 		
 		JPanel pkgListPanel = new JPanel();
@@ -328,8 +334,9 @@ public class Gui implements ActionListener, ListSelectionListener {
 		tglbtnShowQueue.addActionListener(this);
 		pkglistHeader.add(tglbtnShowQueue, BorderLayout.EAST);
 
-		/*
-		try {
+		
+		/*try {
+			//UIManager.setLookAndFeel(UIManager.)
 		    UIManager.setLookAndFeel(
 		        UIManager.getSystemLookAndFeelClassName());
 		} catch (UnsupportedLookAndFeelException ex) {
@@ -346,8 +353,8 @@ public class Gui implements ActionListener, ListSelectionListener {
 		}*/
 		
 		calcList();
-		GuiMessagingThread g = new GuiMessagingThread(lblStatus);
-		
+		GuiMessagingThread g = new GuiMessagingThread(lblStatus, frmMcpkg, this);
+		Commands.launchthread();
 		
 		
 		/*JList list = new JList();
@@ -361,7 +368,6 @@ public class Gui implements ActionListener, ListSelectionListener {
 			}
 		});
 		panel.add(list, BorderLayout.SOUTH);*/
-		btnQueueOrUnqueue.setVisible(false);
 	}
 
 	@Override
@@ -371,12 +377,40 @@ public class Gui implements ActionListener, ListSelectionListener {
 		{
 			calcList();
 		}
+		else if(arg0.getSource() == btnQueueOrUnqueue)
+		{
+
+			if(selectedPackage.isCorrupt)
+			{
+				calcList();
+				updatePackageView();
+			}
+			if(selectedPackage.isQueued)
+			{
+				Commands.queue(new Commands.unqueuePackage(selectedPackage));
+			}
+			else
+			{
+				Commands.queue(new Commands.queuePackage(selectedPackage));
+			}
+		}
+		else if(arg0.getSource() == btnRunMinecraft)
+		{
+			Commands.queue(new Commands.runMinecraft());
+		}
+			
 	}
 	public Package selectedPackage = null;
 	@Override
 	public void valueChanged(ListSelectionEvent arg0) {
 		// TODO Auto-generated method stub
-		packageList.getSelectedIndices();
+		updatePackageView();
+		
+		
+	}
+	public void updatePackageView()
+	{
+		//packageList.getSelectedIndices();
 		if(packageList.getSelectedIndex() < 0 || packageListModel.packageListValues == null ||  packageList.getSelectedIndex()>=packageListModel.packageListValues.length)
 		{
 			selectedPackage = null;
@@ -393,12 +427,15 @@ public class Gui implements ActionListener, ListSelectionListener {
 			subdesc = "\t"+selectedPackage.ShortDescription +"\n\n" + subdesc.substring(subdesc.indexOf("\n"));
 			
 			txtpnPackageDescription.setText(subdesc);
-			//btnQueueOrUnqueue.setVisible(true);
-			System.out.println(selectedPackage.isQueued);
+			btnQueueOrUnqueue.setVisible(true);
+			//System.out.println(selectedPackage.isQueued);
 			btnQueueOrUnqueue.setText(selectedPackage.isQueued ? "Unqueue (remove)" : "Queue (install)");
 		}
-		
-		
+		if(selectedPackage.isCorrupt)
+		{
+			calcList();
+			updatePackageView();
+		}
 	}
 	
 	

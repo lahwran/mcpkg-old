@@ -6,8 +6,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -105,6 +111,8 @@ public class Commands extends Thread {
 	public static Package[] getQueue() throws FileNotFoundException, IOException
 	{
 		Index.loadrepos(false); 
+		if(Queue.thequeue==null)
+			return new Package[0];
 		return Queue.thequeue.toArray(new Package[0]);
 	}
 	
@@ -124,20 +132,64 @@ public class Commands extends Thread {
 			Queue.readqueue();
 			try {
 				Installer.run();
-			} catch (FileNotFoundException e) {
+			} catch (Throwable e) {
+				e.printStackTrace();
 				Messaging.message(e.getMessage());
 				return;
-			} catch (ZipException e) {
-				Messaging.message(e.getMessage());
-				return;
-			} catch (IOException e) {
-				Messaging.message(e.getMessage());
-				return;
-			} catch (FormatError e) {
-				Messaging.message(e.getMessage());
-				return;
-			} catch (ModConflict e) {
-				Messaging.message(e.getMessage());
+			}
+		}
+	}
+	
+	public static class runMinecraft extends runInstall
+	{
+		@Override
+		public void run()
+		{
+			try {
+				Index.loadrepos(false);
+				Queue.readqueue();
+				
+					Installer.run();
+				
+				Messaging.message("Getting Launcher...");
+				File appdir = new File(Util.getAppDir("mcpkg")+"/");
+				appdir.mkdirs();//won't do anything if it's not needed
+				File mclauncher = new File(appdir,"Minecraft.jar");
+				//http://www.minecraft.net/download/minecraft.jar?v=1297558339102
+				String url = "http://www.minecraft.net/download/minecraft.jar";
+				if(!mclauncher.exists())
+				{
+					InputStream fin = null;
+					FileOutputStream fout = null;
+					byte[] buffer = new byte[4096]; //Buffer 4K at a time (you can change this).
+					int bytesRead;
+					try {
+						//open the files for input and output
+						fin = Util.readURL(url);
+						fout = new FileOutputStream (mclauncher);
+						//while bytesRead indicates a successful read, lets write...
+						while ((bytesRead = fin.read(buffer)) >= 0) {
+							fout.write(buffer,0,bytesRead);
+						}
+					
+					} finally { //Ensure that the files are closed (if they were open).
+						if (fin != null) { fin.close(); }
+						if (fout != null) { fout.close(); }
+					}
+				}
+				Messaging.message("Running Launcher...");
+				Process ps = null;
+				ps = Runtime.getRuntime().exec(new String[]{"java","-jar",mclauncher.getAbsolutePath()});
+				
+		        ps.waitFor();
+		        java.io.InputStream is=ps.getInputStream();
+		        byte b[] = null;
+				b = new byte[is.available()];
+		        is.read(b,0,b.length);
+		        System.out.println(new String(b));
+			} catch (Throwable e) {
+				e.printStackTrace();
+				Messaging.message(e.getClass().getSimpleName()+": "+e.getMessage());
 				return;
 			}
 		}
@@ -507,6 +559,7 @@ public class Commands extends Thread {
 			}
 			else
 			{
+				System.out.println("command");
 				r.run();
 				clicanexit = true; //when this is set true, the command line version exits
 			}
