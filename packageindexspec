@@ -89,6 +89,7 @@ a,b,c,d...
 #if omitted, assumes no depends
 Depends: <PackageList>
 
+#UNIMPLEMENTED - if your package needs these, it might break on user's machines
 #if included, specifies packages that this package must be installed before, if those are being installed
 InstallBefore: <PackageList>
 
