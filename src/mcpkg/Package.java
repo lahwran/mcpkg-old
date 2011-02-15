@@ -38,7 +38,7 @@ public class Package {
 	
 	//public static HashMap<String, Package> Packages = new HashMap<String, Package>();
 	public static HashMap<String, Package> CacheNames = new HashMap<String, Package>();
-	public static boolean isLatest;
+	//public static boolean isLatest;
 	
 	public Package(String _name, String _MCVersion, String _Version)
 	{
@@ -106,6 +106,8 @@ public class Package {
 		}
 	}
 	
+	
+	
 	@Override
 	public boolean equals(Object _p)
 	{
@@ -115,10 +117,6 @@ public class Package {
 	public static Package revive(Package p)
 	{
 		Package[] packages=Package.CacheNames.values().toArray(new Package[0]);
-		for(int i=0; i<packages.length; i++)
-		{
-			packages[i].getCachename(); //generate cache names that haven't been
-		}
 		for(int i=0;i<packages.length; i++)
 		{
 			if(packages[i].getCachename().equals(p.getCachename()))
@@ -126,5 +124,10 @@ public class Package {
 			
 		}
 		throw new IllegalArgumentException("could not revive hash "+p.getCachename()+" from package "+p.Name);
+	}
+	
+	public boolean checkLatest() {
+		// TODO Auto-generated method stub
+		return new PackageCompare(Name).get() == this;
 	}
 }

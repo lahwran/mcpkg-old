@@ -45,7 +45,7 @@ public class Commands extends Thread {
 		Package[] allpackages = Package.CacheNames.values().toArray(new Package[0]);
 		for(int i=0; i<allpackages.length; i++)
 		{
-			if(!allpackages[i].isLatest)
+			if(!allpackages[i].checkLatest())
 				continue;
 			int matchcount=0;
 			
@@ -101,7 +101,15 @@ public class Commands extends Thread {
 	public static Package[] getPackages() throws FileNotFoundException, IOException
 	{
 		Index.loadrepos(false);
-		return Package.CacheNames.values().toArray(new Package[0]);
+		ArrayList<Package> allpackages = new ArrayList<Package>(Package.CacheNames.values());
+		ArrayList<Package> latestpackages = new ArrayList<Package>(allpackages.size());
+		for(int i=0; i<allpackages.size(); i++)
+		{
+			if(allpackages.get(i).checkLatest())
+				latestpackages.add(allpackages.get(i));
+		}
+		
+		return latestpackages.toArray(new Package[0]);
 	}
 	
 	public static Package getPackage(String name) throws FileNotFoundException, IOException
