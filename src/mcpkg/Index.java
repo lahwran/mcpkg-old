@@ -34,31 +34,6 @@ public class Index {
 		boolean forceload;
 	}
 	
-	public static String[] splitKV(String whole)
-	{
-		//spec states that keys may not contain spaces
-		//consider it part of a block
-		if(whole == null)
-			return null;
-		
-		if(whole.matches("^[^ ]*: .*"))
-		{
-			String[] spl = whole.split(": ", 2);
-			return spl;
-		}
-		return new String[]{"Block", whole};
-	}
-	
-	public static boolean isin(String x, String[] y)
-	{
-		for (int i=0; i<y.length; i++)
-		{
-			if (x.equals(y[i]))
-				return true;
-		}
-		return false;
-	}
-	
 	//TODO: multiple, comma-separated minecraft versions - only read in the one for the current minecraft version
 	//TODO: only read in latest version
 	public static String[][] readRepoFromStream(BufferedReader in, String[] curKV, boolean cansection, boolean cansubrepo, boolean forceload)
@@ -82,7 +57,7 @@ public class Index {
 		{
 			fieldcache.add(curKV);
 			
-			if(isin(curKV[0], SectionNames))
+			if(Util.isin(curKV[0], SectionNames))
 			{
 				currentsection = new HashMap<String, ArrayList<String>>();
 				ArrayList<String> curV = new ArrayList<String>();
@@ -115,7 +90,7 @@ public class Index {
 				lastVs.add(curKV[1]);
 			}
 			
-			curKV = splitKV(Util.getNextLine(in));
+			curKV = Util.splitKV(Util.getNextLine(in));
 		}
 		/*
 		for(int i=0; i<SectionNames.length; i++)
@@ -181,8 +156,14 @@ public class Index {
 		{
 			//java.lang.IndexOutOfBoundsException
 			HashMap<String, ArrayList<String>> pdata = Packages.get(i);
-			Package p = new Package(pdata.get("Name").get(0));
-			Package.Packages.put(p.Name, p);
+			
+			String[] Versions = pdata.get("Version").get(0).split(" ", 3);
+			
+			Package p = new Package(pdata.get("Name").get(0),Versions[0],Versions[1]);
+			
+			Package.CacheNames.put(p.getCachename(), p);
+			p.PackageURL = Versions[2];
+			
 			ArrayList<String> dataauthors = pdata.get("Author");
 			String[] temp = dataauthors.get(0).split("[<>]");
 			ArrayList<String[]> authors = new ArrayList<String[]>();
@@ -208,14 +189,10 @@ public class Index {
 				throw new IllegalArgumentException("undeclared section "+section+" while reading package "+p.Name);
 			p.Section = section;
 			
-			String[] Versions = pdata.get("Version").get(0).split(" ", 3);
 			
-			p.PackageURL = Versions[2];
-			p.Version = Versions[1];
-			p.MCVersion = Versions[0];
 			
 			if(pdata.containsKey("SingleChangelog"))
-				p.Homepage = pdata.get("SingleChangelog").get(0);
+				p.LatestChangelog = pdata.get("SingleChangelog").get(0);
 			
 			if(pdata.containsKey("ItemIDs"))
 			{
@@ -304,8 +281,8 @@ public class Index {
 		if(thiscache.exists())
 		{
 			cachereader = new BufferedReader(new InputStreamReader(new FileInputStream(thiscache)));
-			cachehead[0] = splitKV(Util.getNextLine(cachereader));
-			cachehead[1] = splitKV(Util.getNextLine(cachereader));
+			cachehead[0] = Util.splitKV(Util.getNextLine(cachereader));
+			cachehead[1] = Util.splitKV(Util.getNextLine(cachereader));
 			if(cachehead[0][0].equals("DownloadTime"))
 			{
 				long time = new Long(cachehead[0][1]);
@@ -322,7 +299,7 @@ public class Index {
 		in = new BufferedReader(new InputStreamReader(Util.readURL(repourl)));
 	
 
-		String[] inputLine = splitKV(Util.getNextLine(in));
+		String[] inputLine = Util.splitKV(Util.getNextLine(in));
 		
 		if(inputLine != null && inputLine[0].equals("IndexVersion") && thiscache.exists())
 		{
@@ -346,7 +323,7 @@ public class Index {
 		if(haveloaded)
 			return;
 		haveloaded = true;
-		if(Package.Packages.size() > 0)
+		/*if(Package.Packages.size() > 0)
 		{
 			String[] keys = Package.Packages.keySet().toArray(new String[0]);
 			for(int i=0; i<keys.length; i++)
@@ -357,7 +334,7 @@ public class Index {
 			}
 			Package.Packages = new HashMap<String, Package>();
 			Package.CacheNames = new HashMap<String, Package>();
-		}
+		}*/
 		//Messaging.message("Loading repositories");
 		readrepolist();
 		//TODO: needs some kind of rate limiting .. don't check more often than every 10 minutes or something 
@@ -406,7 +383,11 @@ public class Index {
 			String line = null;
 			while ((line = Util.getNextLine(f3)) != null)
 			{
-				listbuilder.add(line);
+				if(line.equals("~default"))
+					listbuilder.add(defaultrepo);
+				//else if(line.equals(""))
+				else
+					listbuilder.add(line);
 			}
 			
 			f3.close();
@@ -429,7 +410,7 @@ public class Index {
 		
 		BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
 		
-		writer.write("#default repository\n"+defaultrepo);
+		writer.write("#default repository\n~default");
 		
 		writer.close();
 		mainrepos = new String[]{defaultrepo};

@@ -60,7 +60,7 @@ public class Gui implements ActionListener, ListSelectionListener {
 			Package p = packageListValues[index];
 			if(p.isCorrupt)
 				calcList();
-			return (p.isQueued?"-":" ")+" "+p.Name+" - "+p.ShortDescription;
+			return (p.isQueued?"-":" ")+" "+p.Name+" - "+p.ShortDescription + " ("+p.MCVersion+"/"+p.Version+")";
 		}
 		ArrayList<ListDataListener> listeners = new ArrayList<ListDataListener>();
 		@Override

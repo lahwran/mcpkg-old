@@ -153,7 +153,7 @@ public class PackageCompare implements Comparator<Package> {
 	
 	public Package[] all()
 	{
-		Package[] packages=Package.Packages.values().toArray(new Package[0]);
+		Package[] packages=Package.CacheNames.values().toArray(new Package[0]);
 		ArrayList<Package> matches = new ArrayList<Package>();
 		for(int i=0; i<packages.length; i++)
 		{

@@ -36,14 +36,18 @@ public class Package {
 	public boolean isCorrupt = false; //a package object is 'corrupt' after the repository has been reloaded live and a reference to the package existed outside the repository.
 	                                  //when this happens, the systems that own the reference must be informed to get rid of the package reference.
 	
-	public static HashMap<String, Package> Packages = new HashMap<String, Package>();
+	//public static HashMap<String, Package> Packages = new HashMap<String, Package>();
 	public static HashMap<String, Package> CacheNames = new HashMap<String, Package>();
+	public static boolean isLatest;
 	
-	public Package(String _name)
+	public Package(String _name, String _MCVersion, String _Version)
 	{
 		//Packages.put(_name, this);
 		//System.out.println("new package object: "+_name);
 		Name = _name;
+		Version = _Version;
+		MCVersion = _MCVersion;
+		getCachename();
 	}
 	
 	public String getID()
@@ -110,7 +114,7 @@ public class Package {
 	}
 	public static Package revive(Package p)
 	{
-		Package[] packages=Package.Packages.values().toArray(new Package[0]);
+		Package[] packages=Package.CacheNames.values().toArray(new Package[0]);
 		for(int i=0; i<packages.length; i++)
 		{
 			packages[i].getCachename(); //generate cache names that haven't been

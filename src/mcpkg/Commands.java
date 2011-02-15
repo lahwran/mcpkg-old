@@ -42,9 +42,11 @@ public class Commands extends Thread {
 		Index.loadrepos(false);
 		HashMap<Package,Integer> matches = new HashMap<Package,Integer>();
 		
-		Package[] allpackages = Package.Packages.values().toArray(new Package[0]);
+		Package[] allpackages = Package.CacheNames.values().toArray(new Package[0]);
 		for(int i=0; i<allpackages.length; i++)
 		{
+			if(!allpackages[i].isLatest)
+				continue;
 			int matchcount=0;
 			
 			//split returns the number of fragments, which is the number of matches + 1
@@ -99,13 +101,13 @@ public class Commands extends Thread {
 	public static Package[] getPackages() throws FileNotFoundException, IOException
 	{
 		Index.loadrepos(false);
-		return Package.Packages.values().toArray(new Package[0]);
+		return Package.CacheNames.values().toArray(new Package[0]);
 	}
 	
 	public static Package getPackage(String name) throws FileNotFoundException, IOException
 	{
 		Index.loadrepos(false); //TODO: due to how often loadrepos is called (every time anything is needed, pretty much) it must nicely detect when everything is already loaded
-		return Package.Packages.get(name);
+		return new PackageCompare(name).get();
 	}
 	
 	public static Package[] getQueue() throws FileNotFoundException, IOException

@@ -57,7 +57,7 @@ public class Installer {
 			out.mkdirs();
 			
 			Package thispackage = Queue.thequeue.get(i);
-			
+			thispackage.cache();
 			ZipArchive patch = new ZipArchive(new File(cachedir, thispackage.getCachename()));
 			String curtarget = "";
 			try {

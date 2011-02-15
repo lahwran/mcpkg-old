@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
+import mcpkg.Index.subrepo;
 import mcpkg.errors.dependency.UnsolvableConflict;
 
 //TODO: queue should know which packages were queued as a dependency and which were manually queued
@@ -19,6 +22,235 @@ public class Queue {
 	public static ArrayList<Package> thequeue;
 	
 	public static void readqueue()
+	{
+		String[] curKV = null;
+		File appdir = new File(Util.getAppDir("mcpkg")+"/");
+		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
+		cachedir.mkdirs();
+		appdir.mkdirs();//won't do anything if it's not needed
+		File queuefile = new File(appdir,"queue.lst");
+		//thequeue = new ArrayList<Package>(); //clear it before loading - but only once we know the queue file exists
+		if(thequeue != null && thequeue.size() > 0 && isclean())
+			return; //guess we don't want to reinit it...
+		thequeue = new ArrayList<Package>();
+		
+		if(!queuefile.exists())
+			return;
+		//TODO: should cache a hash of the file, reload only if it changed, that way when this function is called a lot (which it will be) it will not do anything when unneeded.
+		FileInputStream f1 = null;
+		try {
+			f1 = new FileInputStream(queuefile);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		InputStreamReader f2 = new InputStreamReader(f1);
+		BufferedReader in = new BufferedReader(f2);
+		
+		
+		
+		HashMap<String, ArrayList<HashMap<String, ArrayList<String>>>> loadeddata = new HashMap<String, ArrayList<HashMap<String, ArrayList<String>>>>();
+		
+		HashMap<String, ArrayList<String>> currentsection = null;
+		
+		String lastkey = null; //so we can append to last value with blocks
+		
+		final String[] SectionNames = new String [] {"Package"};
+		
+		for(int i=0; i<SectionNames.length; i++)
+		{
+			loadeddata.put(SectionNames[i], new ArrayList<HashMap<String, ArrayList<String>>>());
+		}
+
+		curKV = Util.splitKV(Util.getNextLine(in));
+		while(curKV != null)
+		{
+			
+			if(Util.isin(curKV[0], SectionNames))
+			{
+				currentsection = new HashMap<String, ArrayList<String>>();
+				ArrayList<String> curV = new ArrayList<String>();
+				curV.add(curKV[1]);
+				currentsection.put("Name", curV);
+				lastkey = "Name";
+				if(!loadeddata.containsKey(curKV[0]))
+				{
+					loadeddata.put(curKV[0], new ArrayList<HashMap<String, ArrayList<String>>>());
+				}
+				loadeddata.get(curKV[0]).add(currentsection);
+			}
+			else if(curKV[0].equals("Block") && currentsection != null && lastkey != null)
+			{
+				ArrayList<String> lastVs = currentsection.get(lastkey);
+				String lastV = lastVs.get(lastVs.size()-1) + "\n" + curKV[1];
+				lastVs.remove(lastVs.size()-1);
+				lastVs.add(lastV);
+			}
+			else if(currentsection != null && !currentsection.containsKey(curKV[0]))
+			{
+				ArrayList<String> curV = new ArrayList<String>();
+				curV.add(curKV[1]);
+				currentsection.put(curKV[0], curV);
+				lastkey = curKV[0];
+			}
+			else if(currentsection != null)
+			{
+				ArrayList<String> lastVs = currentsection.get(lastkey);
+				lastVs.add(curKV[1]);
+			}
+			
+			curKV = Util.splitKV(Util.getNextLine(in));
+		}
+		/*
+		for(int i=0; i<SectionNames.length; i++)
+		{
+			System.out.println("section type "+SectionNames[i]);
+			ArrayList<HashMap<String, ArrayList<String>>> sstype = loadeddata.get(SectionNames[i]);
+			for(int j=0; j<sstype.size(); j++)
+			{
+				currentsection = sstype.get(j);
+				System.out.println("\tsection "+currentsection.get("Name").get(0));
+				String[] sectionkeys = currentsection.keySet().toArray(new String[0]); 
+				for(int k=0;k<sectionkeys.length;k++)
+				{
+					System.out.println("\t\tkey: "+sectionkeys[k]);
+					if(!sectionkeys[k].equalsIgnoreCase("Name"))
+					{
+						ArrayList<String> curV = currentsection.get(sectionkeys[k]);
+						for(int l=0; l<curV.size(); l++)
+							System.out.println("\t\t\t"+curV.get(l)+"\n\t\t\t\tendV");
+					}
+				}
+				System.out.println("\tsectionend");
+			}
+			System.out.println("sectiontypeend");
+			
+		}
+		//*/
+		///*
+		//icky name is icky
+		ArrayList<HashMap<String, ArrayList<String>>> Packages = loadeddata.get("Package");
+		for(int i=0; i<Packages.size(); i++)
+		{
+			//java.lang.IndexOutOfBoundsException
+			HashMap<String, ArrayList<String>> pdata = Packages.get(i);
+			
+			String Cachename = pdata.get("Cachename").get(0);
+			Package p = null;
+			if(Package.CacheNames.get(Cachename) != null)
+			{
+				p = Package.CacheNames.get(Cachename);
+			}
+			else
+			{
+				String[] Versions = pdata.get("Version").get(0).split(" ", 3);
+				p = new Package(pdata.get("Name").get(0),Versions[0],Versions[1]);
+				
+				Package.CacheNames.put(p.getCachename(), p);
+				p.PackageURL = Versions[2];
+				
+				ArrayList<String> dataauthors = pdata.get("Author");
+				String[] temp = dataauthors.get(0).split("[<>]");
+				ArrayList<String[]> authors = new ArrayList<String[]>();
+				authors.add(new String[] {temp[0], temp[1]});
+				for(int j=1; j<dataauthors.size(); j++)
+				{
+					temp = dataauthors.get(j).split("[<>]");
+					authors.add(new String[] {temp[0], temp[1]});
+				}
+				p.Authors=authors.toArray(new String[0][]);
+				
+				if(pdata.containsKey("Homepage"))
+					p.Homepage = pdata.get("Homepage").get(0);
+				
+				String section = null;
+				try{
+					section = pdata.get("PackageSection").get(0);
+				}catch (NullPointerException e) {
+					//let's add some context, yes?
+					throw new IllegalArgumentException("package "+p.Name+" missing PackageSection field");
+				}
+				if (!Index.Sections.containsKey(section))
+					Index.Sections.put(section, null);
+				p.Section = section;
+				
+				
+				
+				//if(pdata.containsKey("SingleChangelog"))
+				//	p.Homepage = pdata.get("SingleChangelog").get(0);
+				
+				/*if(pdata.containsKey("ItemIDs"))
+				{
+					temp = pdata.get("ItemIDs").get(0).split(",");
+					p.ItemIDs = new int[temp.length];
+					for(int j=0; j<temp.length; j++)
+					{
+						p.ItemIDs[j]= new Integer(temp[j]);
+					}
+				}
+				if(pdata.containsKey("BlockIDs"))
+				{
+					temp = pdata.get("BlockIDs").get(0).split(",");
+					p.BlockIDs = new int[temp.length];
+					for(int j=0; j<temp.length; j++)
+					{
+						p.BlockIDs[j]= new Integer(temp[j]);
+					}
+				}*/
+				
+				p.FullDescription = pdata.get("Description").get(0);
+				p.ShortDescription = p.FullDescription.indexOf("\n") != -1 ? p.FullDescription.substring(0, p.FullDescription.indexOf("\n")) : "";
+			}
+			thequeue.add(p);
+			p.isQueued = true;
+		}
+		//*/
+	}
+	
+	public static void writequeue()
+	{
+		if(thequeue == null)
+			return;
+		try {
+			File appdir = new File(Util.getAppDir("mcpkg")+"/");
+			appdir.mkdirs();//won't do anything if it's not needed
+			File queuefile = new File(appdir,"queue.lst");
+			
+			FileOutputStream fo = new FileOutputStream(queuefile);
+			
+			OutputStreamWriter osw = new OutputStreamWriter(fo);
+			
+			BufferedWriter writer = new BufferedWriter(osw); /// WHY can't I just do File.write()??? I mean seriously? 
+			
+			for(int i=0; i<thequeue.size();i++)
+			{
+				Package p = thequeue.get(i);
+				writer.write("Package: "+p.Name+"\n");
+				writer.write("Cachename: "+p.getCachename()+"\n");
+				for(int authornum = 0; authornum < p.Authors.length; authornum++)
+				{
+					writer.write("Author: "+p.Authors[authornum][0]+"<"+p.Authors[authornum][1]+">\n");
+				}
+				if(p.Homepage != null)
+					writer.write("Homepage: "+p.Homepage+"\n");
+				writer.write("PackageSection: "+p.Section+"\n");
+				writer.write("Version: "+p.MCVersion+" "+p.Version+" "+p.PackageURL+"\n");
+				writer.write("Description: "+p.FullDescription+"\n");
+			}
+			
+			writer.close();
+			
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void read_queue()
 	{
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
@@ -44,11 +276,11 @@ public class Queue {
 		BufferedReader f3 = new BufferedReader(f2);
 		
 		
-		Package[] packages=Package.Packages.values().toArray(new Package[0]);
+		/*Package[] packages=Package.CacheNames.values().toArray(new Package[0]);
 		for(int i=0; i<packages.length; i++)
 		{
 			packages[i].getCachename(); //generate cache names that haven't been
-		}
+		}*/ 
 		
 		try {
 			String line = null;
@@ -57,7 +289,8 @@ public class Queue {
 				Package p = Package.CacheNames.get(line);
 				if (p == null)
 				{//this package has not been loaded
-					p=Package.readFile(new File(cachedir,line));
+					//p=Package.readFile(new File(cachedir,line));
+					continue; //skip it
 				}
 				p.isQueued = true;
 				thequeue.add(p);
@@ -81,7 +314,7 @@ public class Queue {
 		return true;
 	}
 	
-	public static void writequeue()
+	public static void write_queue()
 	{
 		if(thequeue == null)
 			return;
@@ -293,4 +526,12 @@ public class Queue {
 		}
 	}
 	
+	
+	public static void upgradecheck()
+	{
+		for(int i=0; i<thequeue.size();i++)
+		{
+			
+		}
+	}
 }

@@ -356,4 +356,29 @@ public class Util {
 		String spath=path.getPath().substring(root.getPath().length()).toLowerCase();
 		return canTouch(spath, path.isDirectory());
 	}
+
+	public static boolean isin(String x, String[] y)
+	{
+		for (int i=0; i<y.length; i++)
+		{
+			if (x.equals(y[i]))
+				return true;
+		}
+		return false;
+	}
+
+	public static String[] splitKV(String whole)
+	{
+		//spec states that keys may not contain spaces
+		//consider it part of a block
+		if(whole == null)
+			return null;
+		
+		if(whole.matches("^[^ ]*: .*"))
+		{
+			String[] spl = whole.split(": ", 2);
+			return spl;
+		}
+		return new String[]{"Block", whole};
+	}
 }

@@ -298,7 +298,7 @@ public class Main {
 		for(int i=0; i<list.length; i++)
 		{
 			Package p = list[i];
-			Messaging.message(p.Name + " - " + p.ShortDescription);
+			Messaging.message(p.Name + " - " + p.ShortDescription + " ("+p.MCVersion+"/"+p.Version+")");
 		}
 	}
 
