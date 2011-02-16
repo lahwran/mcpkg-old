@@ -47,10 +47,12 @@ import javax.swing.JToggleButton;
 
 import mcpkg.*;
 import mcpkg.Package;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.DefaultTableModel;
 
 public class Gui implements ActionListener, ListSelectionListener {
 
-	public final class PackageListModel implements ListModel {
+	public final class PackageTableModel implements ListModel {
 		public Package[] packageListValues = null;
 		public int getSize() {
 			return packageListValues != null ? packageListValues.length : 0;
@@ -115,7 +117,6 @@ public class Gui implements ActionListener, ListSelectionListener {
 	public JButton btnOptions;
 	public JLabel lblStatus;
 	public JTextPane txtpnPackageDescription;
-	public JList packageList;
 	public MakePackage dlgMakePackage;
 	public JFileChooser fileChooser;
 	
@@ -281,14 +282,42 @@ public class Gui implements ActionListener, ListSelectionListener {
 		JComboBox comboBox = new JComboBox();
 		panel_1.add(comboBox);*/
 		packageListModel = new PackageListModel();
-		packageList = new JList();
-		packageList.addListSelectionListener(this);
-		packageList.setModel(packageListModel);
 		//System.out.println(packageList.getSelectedIndex());
-		JScrollPane packageScrollPane = new JScrollPane(packageList);
+		JScrollPane packageScrollPane = new JScrollPane();
 		// Or in two steps:
 		
 		pkgListPanel.add(packageScrollPane, BorderLayout.CENTER);
+		
+		table = new JTable();
+		table.setModel(new DefaultTableModel(
+			new Object[][] {
+				{Boolean.FALSE, null, null, "", null, null},
+				{Boolean.FALSE, null, null, null, null, null},
+				{null, null, null, null, null, null},
+				{null, null, null, null, null, null},
+			},
+			new String[] {
+				"", "ID", "Queued Version", "Avail. Version", "Section", "Description"
+			}
+		) {
+			Class[] columnTypes = new Class[] {
+				Boolean.class, Object.class, Object.class, Object.class, Object.class, Object.class
+			};
+			public Class getColumnClass(int columnIndex) {
+				return columnTypes[columnIndex];
+			}
+		});
+		table.getColumnModel().getColumn(0).setResizable(false);
+		table.getColumnModel().getColumn(0).setPreferredWidth(21);
+		table.getColumnModel().getColumn(0).setMinWidth(21);
+		table.getColumnModel().getColumn(0).setMaxWidth(21);
+		table.getColumnModel().getColumn(1).setPreferredWidth(94);
+		table.getColumnModel().getColumn(2).setPreferredWidth(113);
+		table.getColumnModel().getColumn(3).setPreferredWidth(91);
+		table.getColumnModel().getColumn(5).setPreferredWidth(217);
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		table.setFillsViewportHeight(true);
+		packageScrollPane.setViewportView(table);
 		
 		JPanel pkglistHeader = new JPanel();
 		pkgListPanel.add(pkglistHeader, BorderLayout.NORTH);
@@ -413,10 +442,9 @@ public class Gui implements ActionListener, ListSelectionListener {
 			
 	}
 	public Package selectedPackage = null;
+	private JTable table;
 	@Override
 	public void valueChanged(ListSelectionEvent arg0) {
-		// TODO Auto-generated method stub
-		updatePackageView();
 		
 		
 	}
