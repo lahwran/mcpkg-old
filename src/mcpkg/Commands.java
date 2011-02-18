@@ -29,6 +29,7 @@ import mcpkg.errors.patcher.FormatError;
 
 public class Commands extends Thread {
 
+	
 	public static String[] getRepos() throws FileNotFoundException, IOException
 	{
 		Index.readrepolist();
@@ -299,6 +300,51 @@ public class Commands extends Thread {
 			Queue.readqueue();
 			Queue.unqueuePackage(p);
 		}
+	}
+	
+	public static class updatePackage implements Runnable {
+		public Package p;
+		public updatePackage(String _id)
+		{
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			p=new PackageCompare(_id).get();
+			if(p == null)
+				throw new IllegalArgumentException("package '"+_id+"' not found");
+		}
+		public updatePackage(Package _p) {
+			try {
+				Index.loadrepos(false);
+			} catch (FileNotFoundException e) {
+				Messaging.message(e.getMessage());
+				return;
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				return;
+			}
+			p=_p;
+		}
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			Queue.readqueue();
+			try {
+				Queue.updatePackage(p);
+			} catch (IOException e) {
+				Messaging.message(e.getMessage());
+				e.printStackTrace();
+				return;
+			}
+		}
+
 	}
 	
 	public static class delRepo implements Runnable

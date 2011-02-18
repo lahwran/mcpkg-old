@@ -507,31 +507,142 @@ public class Queue {
 		}
 	}
 	
-	public static void deduplicateQueue()
-	{
-		ArrayList<Package> tempqueue = thequeue;
-		thequeue = new ArrayList<Package>();
-		for(int x=0; x<thequeue.size(); x++)
+	public static void updatePackage(Package p) throws IOException {
+		ArrayList<Package> toremove = new ArrayList<Package>();
+		ArrayList<Package> toinstall = new ArrayList<Package>();
+		try {
+			Dependency.replace(p, p.getLatest(), thequeue, toinstall, toremove);
+		} catch (Throwable e) {
+			Messaging.message("ERROR: "+e.getMessage());
+			e.printStackTrace();
+			return;
+		}
+		ArrayList<String> toupgrade = new ArrayList<String>();
+		for(int i=0; i<toremove.size(); i++)
 		{
-			boolean canadd = true;
-			for(int y=0; y<thequeue.size(); y++)
+			if(toinstall.contains(toremove.get(i).getLatest()))
 			{
-				if(y != x && thequeue.get(x).getCachename().equals(thequeue.get(y).getCachename()))
+				toupgrade.add(toremove.get(i).Name);
+
+				if(toremove.get(i).isCorrupt)
+					throw new IllegalArgumentException("corrupt package!");
+			}
+		}
+		StringBuilder s = new StringBuilder();
+		for(int i=0; i<toinstall.size(); i++)
+		{
+			Package x = toinstall.get(i);
+			if(x.isCorrupt)
+				throw new IllegalArgumentException("corrupt package "+x.Name+"!");
+			if(toupgrade.contains(x.Name))
+				continue; //TODO: unfinished conversion
+			boolean shouldcont = false;
+			System.out.println("consider "+x.Name);
+			for(int j=0; j<thequeue.size(); j++)
+			{
+				if(thequeue.get(j).equals(x))
 				{
-					canadd = false;
+					toinstall.remove(x);
+					System.out.println("not adding "+x.Name);
+					shouldcont = true;
 				}
 			}
-			if(canadd)
-				thequeue.add(thequeue.get(x));
+			if(i>0)
+				s.append(" ");
+			else
+				s.append("Packages to be queued:\n");
+			if (shouldcont)
+				continue;
+			else
+				System.out.println("adding "+x.Name);
+			s.append(x.Name);
+			/*if(!x.Version.equals(".") && false)
+			{
+				s.append("==");
+				s.append(x.Version);
+			}*/
 		}
-	}
-	
-	
-	public static void upgradecheck()
-	{
-		for(int i=0; i<thequeue.size();i++)
+		for(int i=0; i<toremove.size(); i++)
 		{
-			
+			Package x = toremove.get(i);
+
+			if(toupgrade.contains(x.Name))
+				continue;
+			if(x.isCorrupt)
+				throw new IllegalArgumentException("corrupt package!");
+			boolean shouldcont = false;
+			for(int j=0; j<thequeue.size(); j++)
+			{
+				if(thequeue.get(j).equals(x))
+				{
+					toremove.remove(x);
+					shouldcont = true;
+				}
+			}
+			if (shouldcont)
+				continue;
+			if(i==0)
+				s.append("\nPackages to be removed:");
+			if(i>0)
+				s.append(" ");
+			s.append(x.Name);
+			/*if(!x.Version.equals(".") && false)
+			{
+				s.append("==");
+				s.append(x.Version);
+			}*/
+		}
+
+		for(int i=0; i<toupgrade.size(); i++)
+		{
+			String x = toupgrade.get(i);
+
+			if(i==0)
+				s.append("\nPackages to be upgraded:");
+			if(i>0)
+				s.append(" ");
+			s.append(x);
+			/*if(!x.Version.equals(".") && false)
+			{
+				s.append("==");
+				s.append(x.Version);
+			}*/
+		}
+		if(Messaging.confirm(s.toString()))
+		{
+			for(int i=0; i<toinstall.size(); i++)
+			{
+				Package x = toinstall.get(i);
+				boolean shouldcont = false;
+				for(int j=0; j<thequeue.size(); j++)
+				{
+					if(thequeue.get(j).equals(x))
+					{
+						toinstall.remove(x);
+						shouldcont = true;
+					}
+				}
+				if (shouldcont)
+					continue;
+				thequeue.add(x);
+				x.isQueued = true;
+				x.cache();
+			}
+			for(int i=0; i<toremove.size(); i++)
+			{
+				Package x = toremove.get(i);
+				
+				if(thequeue.contains(x))
+					thequeue.remove(x);
+				x.isQueued = false;
+			}
+
+			//deduplicateQueue();
+			writequeue();
+		}
+		else
+		{
+			Messaging.message("canceled.");
 		}
 	}
 }

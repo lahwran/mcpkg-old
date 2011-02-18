@@ -130,4 +130,21 @@ public class Package {
 		// TODO Auto-generated method stub
 		return new PackageCompare(Name).get() == this;
 	}
+
+	public Package getQueuedVersion() {
+		// TODO Auto-generated method stub
+		for(int i=0; i<Queue.thequeue.size(); i++)
+		{
+			if(Queue.thequeue.get(i).Name.equals(Name))
+			{
+				return Queue.thequeue.get(i);
+			}
+		}
+		return null;
+	}
+
+	public Package getLatest() {
+		// TODO Auto-generated method stub
+		return new PackageCompare(Name).get();
+	}
 }

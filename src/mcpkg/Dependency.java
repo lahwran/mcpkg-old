@@ -102,6 +102,92 @@ public class Dependency {
 		
 		
 	}
+	public static void replace(Package orig, Package replacement, ArrayList<Package> originalstate, ArrayList<Package> toinstall, ArrayList<Package> toremove) throws UnsolvableConflict
+	{
+		replace(orig, replacement, originalstate, new ArrayList<Package>(), toinstall, toremove);
+	}
+	
+	
+	public static void replace(Package orig, Package replacement, ArrayList<Package> originalstate, ArrayList<Package> recursing, ArrayList<Package> toinstall, ArrayList<Package> toremove) throws UnsolvableConflict
+	{
+		//ArrayList<Package> considerlater = new ArrayList<Package>();
+		recursing.add(orig);
+		for(int i=0; i<originalstate.size(); i++)
+		{
+			Package thispkg = originalstate.get(i);
+			if(thispkg.Depends != null)
+			{
+				for(int j=0; j<thispkg.Depends.length; j++)
+				{
+					if(thispkg.Depends[j].test(orig))
+					{
+						boolean shouldremove = false;
+						if(!thispkg.Depends[j].test(replacement))
+						{
+							Package latest = thispkg.getLatest();
+							for(int k=0; j<latest.Depends.length; j++)
+							{
+								if(latest.Depends[i].name.equals(replacement.Name) && !latest.Depends[i].test(replacement))
+								{
+									shouldremove=true;
+									break;
+								}
+							}
+							if(!shouldremove)
+							{
+								replace(thispkg,latest,originalstate,recursing,toinstall,toremove);
+							}
+						}
+						else
+						{
+							shouldremove = true;
+						}
+						if(shouldremove)
+						{
+							remove(thispkg, originalstate, recursing, toremove);
+						}
+					}
+				}
+			}
+		}
+		for(int i=0; i<originalstate.size(); i++)
+			if(originalstate.get(i).Provides != null)
+				for(int providenum = 0; providenum < originalstate.get(i).Provides.length; providenum++)
+					if(originalstate.get(i).Provides[providenum].test(replacement))
+					{
+						remove(originalstate.get(i), originalstate, toremove);
+						ArrayList<Package> empty = new ArrayList<Package>();
+						remove(originalstate.get(i), toinstall, empty);
+						if(empty.size() != 0)
+							throw new UnsolvableConflict(empty.get(empty.size()-1), originalstate.get(i), "Package "+empty.get(empty.size()-1)+" removal-conflicts with package "+originalstate.get(i)+" which was selected in dependency recursion.");
+					}
+		
+		if(replacement.Depends!=null)
+			for(int i=0; i<replacement.Depends.length; i++)
+			{
+				Package p = replacement.Depends[i].get();
+				if(!toinstall.contains(p) && !originalstate.contains(p))
+				{
+					if(recursing.contains(p))
+						continue;
+					resolve(p, originalstate, toinstall, recursing, toremove, false);
+				}
+			}
+		if(replacement.Recommends!=null)
+			for(int i=0; i<replacement.Recommends.length; i++)
+			{
+				Package p = replacement.Recommends[i].get();
+				if(!toinstall.contains(p))
+				{
+					if(recursing.contains(p))
+						continue;
+					resolve(p, originalstate, toinstall, recursing, toremove, false);
+				}
+			}
+		toinstall.add(replacement);
+		toremove.add(orig);
+		recursing.remove(orig);
+	}
 	
 	public static void doconflicts(Package node, PackageCompare[] Conflicts, ArrayList<Package> originalstate, ArrayList<Package> resolved, ArrayList<Package> unresolved, ArrayList<Package> conflicted) throws UnsolvableConflict
 	{

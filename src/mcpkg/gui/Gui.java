@@ -15,6 +15,8 @@ import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -49,57 +51,123 @@ import mcpkg.*;
 import mcpkg.Package;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 
-public class Gui implements ActionListener, ListSelectionListener {
+public class Gui implements ActionListener{
 
-	public final class PackageTableModel implements ListModel {
+	public final class PackageTableModel implements TableModel {
 		public Package[] packageListValues = null;
-		public int getSize() {
-			return packageListValues != null ? packageListValues.length : 0;
-		}
 		
-		public Object getElementAt(int index) {
-			Package p = packageListValues[index];
-			if(p.isCorrupt)
-				calcList();
-			return (p.isQueued?"-":" ")+" "+p.Name+" - "+p.ShortDescription + " ("+p.MCVersion+"/"+p.Version+")";
-		}
-		ArrayList<ListDataListener> listeners = new ArrayList<ListDataListener>();
-		@Override
-		public void addListDataListener(ListDataListener arg0) {
-			// TODO Auto-generated method stub
-			listeners.add(arg0);
-		}
-
-		@Override
-		public void removeListDataListener(ListDataListener arg0) {
-			// TODO Auto-generated method stub
-			listeners.remove(arg0);
-			
-		}
 
 		public void set(Package[] mp) {
 			Package prevselected = null;
-			if(getSize() > 0 && !packageList.isSelectionEmpty())
+			ListSelectionModel lsm = packageTable.getSelectionModel();
+			if(getRowCount() > 0 && !lsm.isSelectionEmpty())
 			{
-				prevselected = packageListValues[packageList.getSelectedIndex()];
+				prevselected = packageListValues[lsm.getMinSelectionIndex()];
 			}
-			packageList.clearSelection();
+			lsm.clearSelection();
 			packageListValues = mp;
 			//may throw
-			ListDataEvent event = new ListDataEvent(this, ListDataEvent.CONTENTS_CHANGED, 0, mp.length);
+			TableModelEvent event = new TableModelEvent(this);
 			for(int i=0; i<listeners.size(); i++)
 			{
-				ListDataListener l = listeners.get(i);
-				l.contentsChanged(event);
+				TableModelListener l = listeners.get(i);
+				l.tableChanged(event);
 			}
 			for(int i=0; i<mp.length; i++)
 			{
 				if (mp[i] == prevselected)
 				{
-					packageList.setSelectedIndex(i);
+					lsm.setSelectionInterval(i, i);
 				}
 			}
+			packageTable.repaint();
+		}
+
+		ArrayList<TableModelListener> listeners = new ArrayList<TableModelListener>();
+		@Override
+		public void addTableModelListener(TableModelListener arg0) {
+			// TODO Auto-generated method stub
+			listeners.add(arg0);
+		}
+
+		@Override
+		public void removeTableModelListener(TableModelListener arg0) {
+			// TODO Auto-generated method stub
+			listeners.remove(arg0);
+		}
+		
+		String[] columnnames = new String[] {
+				"", "ID", "Queued", "Avail.", "Section", "Description"
+			};
+		Class[] columnTypes = new Class[] {
+				Boolean.class, Object.class, Object.class, Object.class, Object.class, Object.class
+			};
+		
+		@Override
+		public Class<?> getColumnClass(int arg0) {
+			// TODO Auto-generated method stub
+			return columnTypes[arg0];
+		}
+
+		@Override
+		public int getColumnCount() {
+			// TODO Auto-generated method stub
+			return columnTypes.length;
+		}
+
+		@Override
+		public String getColumnName(int arg0) {
+			// TODO Auto-generated method stub
+			return columnnames[arg0];
+		}
+
+		@Override
+		public int getRowCount() {
+			// TODO Auto-generated method stub
+			return packageListValues != null ? packageListValues.length : 0;
+		}
+
+		@Override
+		public Object getValueAt(int packagenum, int fieldnum) {
+			// TODO Auto-generated method stub
+			Package p = packageListValues[packagenum];
+			if(p.isCorrupt) //should never happen with the new read prevention
+				calcList();
+			switch (fieldnum)
+			{
+			case 0:
+				return p.getQueuedVersion() != null;
+			case 1:
+				return p.Name;
+			case 2:
+				Package queuedVersion =  p.getQueuedVersion();
+				if (queuedVersion == null)
+					return "";
+				else
+					return queuedVersion.MCVersion+"/"+queuedVersion.Version;
+			case 3:
+				Package p1 = p.getLatest();
+				return p1.MCVersion+"/"+p1.Version;
+			case 4:
+				return p.Section;
+			case 5:
+				return p.ShortDescription;
+			default:
+				return "unmapped field";
+			}
+		}
+
+		@Override
+		public boolean isCellEditable(int x, int y) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public void setValueAt(Object arg0, int arg1, int arg2) {
+			// TODO: do we need this?
 		}
 	}
 
@@ -107,7 +175,6 @@ public class Gui implements ActionListener, ListSelectionListener {
 	public JTextField textField;
 	public JTextField searchBox;
 
-	public PackageListModel packageListModel;
 	public JComboBox sectionBox;
 	public JButton btnRunMinecraft;
 	public JToggleButton tglbtnShowQueue;
@@ -119,6 +186,7 @@ public class Gui implements ActionListener, ListSelectionListener {
 	public JTextPane txtpnPackageDescription;
 	public MakePackage dlgMakePackage;
 	public JFileChooser fileChooser;
+	public PackageTableModel packageTableModel;
 	
 	public void calcList()
 	{
@@ -176,7 +244,7 @@ public class Gui implements ActionListener, ListSelectionListener {
 				mp = templist.toArray(new Package[0]);
 			}
 		}
-		packageListModel.set(mp);
+		packageTableModel.set(mp);
 		//for(int )
 		
 		//if()
@@ -219,10 +287,16 @@ public class Gui implements ActionListener, ListSelectionListener {
 		frmMcpkg.setBounds(100, 100, 822, 560);
 		frmMcpkg.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmMcpkg.getContentPane().setLayout(new BorderLayout(0, 0));
-		
-		btnRunMinecraft = new JButton("Run Minecraft");
+
+		JPanel minecraftButtons = new JPanel();
+		minecraftButtons.setLayout(new BorderLayout(0, 0));
+		btnRunMinecraft = new JButton("Run Minecraft (doesn't update)");
 		btnRunMinecraft.addActionListener(this);
-		frmMcpkg.getContentPane().add(btnRunMinecraft, BorderLayout.NORTH);
+		minecraftButtons.add(btnRunMinecraft, BorderLayout.NORTH);
+		frmMcpkg.getContentPane().add(minecraftButtons, BorderLayout.NORTH);
+		
+		btnUpdateMinecraft = new JButton("Update Minecraft (doesn't run)");
+		minecraftButtons.add(btnUpdateMinecraft, BorderLayout.SOUTH);
 		
 		JPanel statusPane = new JPanel();
 		frmMcpkg.getContentPane().add(statusPane, BorderLayout.SOUTH);
@@ -244,7 +318,6 @@ public class Gui implements ActionListener, ListSelectionListener {
 		panel.add(btnOptions, BorderLayout.EAST);
 		
 		JSplitPane selectionPane = new JSplitPane();
-		selectionPane.setDividerLocation(1.0);
 		selectionPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 		frmMcpkg.getContentPane().add(selectionPane, BorderLayout.CENTER);
 		
@@ -258,8 +331,16 @@ public class Gui implements ActionListener, ListSelectionListener {
 		lblPackageName = new JLabel("No package is selected.");
 		packageDescHeader.add(lblPackageName, BorderLayout.WEST);
 		
-		btnQueueOrUnqueue = new JButton("Queue");
-		packageDescHeader.add(btnQueueOrUnqueue, BorderLayout.EAST);
+		btnQueueOrUnqueue = new JButton("Queue or Unqueue");
+		JPanel packageButtons = new JPanel();
+		packageButtons.setLayout(new BorderLayout(0, 0));
+		packageButtons.add(btnQueueOrUnqueue, BorderLayout.EAST);
+		packageDescHeader.add(packageButtons, BorderLayout.EAST);
+		
+		btnUpdate = new JButton("Update");
+		btnUpdate.addActionListener(this);
+		btnUpdate.setVisible(false);
+		packageButtons.add(btnUpdate, BorderLayout.WEST);
 		
 		txtpnPackageDescription = new JTextPane();
 		txtpnPackageDescription.setEditable(false);
@@ -281,43 +362,38 @@ public class Gui implements ActionListener, ListSelectionListener {
 		
 		JComboBox comboBox = new JComboBox();
 		panel_1.add(comboBox);*/
-		packageListModel = new PackageListModel();
+		packageTableModel = new PackageTableModel();
 		//System.out.println(packageList.getSelectedIndex());
 		JScrollPane packageScrollPane = new JScrollPane();
 		// Or in two steps:
 		
 		pkgListPanel.add(packageScrollPane, BorderLayout.CENTER);
 		
-		table = new JTable();
-		table.setModel(new DefaultTableModel(
-			new Object[][] {
-				{Boolean.FALSE, null, null, "", null, null},
-				{Boolean.FALSE, null, null, null, null, null},
-				{null, null, null, null, null, null},
-				{null, null, null, null, null, null},
-			},
-			new String[] {
-				"", "ID", "Queued Version", "Avail. Version", "Section", "Description"
-			}
-		) {
-			Class[] columnTypes = new Class[] {
-				Boolean.class, Object.class, Object.class, Object.class, Object.class, Object.class
-			};
-			public Class getColumnClass(int columnIndex) {
-				return columnTypes[columnIndex];
+		packageTable = new JTable();
+		packageTable.setModel(packageTableModel);
+		//packageTable.
+		packageTable.getColumnModel().getColumn(0).setResizable(false);
+		packageTable.getColumnModel().getColumn(0).setPreferredWidth(21);
+		packageTable.getColumnModel().getColumn(0).setMinWidth(21);
+		packageTable.getColumnModel().getColumn(0).setMaxWidth(21);
+		packageTable.getColumnModel().getColumn(1).setPreferredWidth(0);
+		packageTable.getColumnModel().getColumn(2).setPreferredWidth(0);
+		packageTable.getColumnModel().getColumn(3).setPreferredWidth(0);
+		packageTable.getColumnModel().getColumn(4).setPreferredWidth(0);
+		packageTable.getColumnModel().getColumn(5).setPreferredWidth(217);
+		packageTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		packageTable.setFillsViewportHeight(true);
+		
+		ListSelectionModel rowSM = packageTable.getSelectionModel();
+		rowSM.addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+				//Ignore extra messages.
+				if (e.getValueIsAdjusting()) return;
+				updatePackageView();
 			}
 		});
-		table.getColumnModel().getColumn(0).setResizable(false);
-		table.getColumnModel().getColumn(0).setPreferredWidth(21);
-		table.getColumnModel().getColumn(0).setMinWidth(21);
-		table.getColumnModel().getColumn(0).setMaxWidth(21);
-		table.getColumnModel().getColumn(1).setPreferredWidth(94);
-		table.getColumnModel().getColumn(2).setPreferredWidth(113);
-		table.getColumnModel().getColumn(3).setPreferredWidth(91);
-		table.getColumnModel().getColumn(5).setPreferredWidth(217);
-		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		table.setFillsViewportHeight(true);
-		packageScrollPane.setViewportView(table);
+		
+		packageScrollPane.setViewportView(packageTable);
 		
 		JPanel pkglistHeader = new JPanel();
 		pkgListPanel.add(pkglistHeader, BorderLayout.NORTH);
@@ -382,6 +458,8 @@ public class Gui implements ActionListener, ListSelectionListener {
 		Commands.launchthread();
 		
 		
+		
+		
 		/*JList list = new JList();
 		list.setModel(new AbstractListModel() {
 			String[] values = new String[] {"package1", "package2", "package3"};
@@ -409,14 +487,24 @@ public class Gui implements ActionListener, ListSelectionListener {
 			{
 				calcList();
 				updatePackageView();
-			}
-			if(selectedPackage.isQueued)
+			} else if(selectedPackage.isQueued)
 			{
 				Commands.queue(new Commands.unqueuePackage(selectedPackage));
 			}
 			else
 			{
 				Commands.queue(new Commands.queuePackage(selectedPackage));
+			}
+		}
+		else if(arg0.getSource() == btnUpdate)
+		{
+			if(selectedPackage.isCorrupt)
+			{
+				calcList();
+				updatePackageView();
+			} else
+			{
+				Commands.queue(new Commands.updatePackage(selectedPackage.getQueuedVersion()));
 			}
 		}
 		else if(arg0.getSource() == btnRunMinecraft)
@@ -442,26 +530,26 @@ public class Gui implements ActionListener, ListSelectionListener {
 			
 	}
 	public Package selectedPackage = null;
-	private JTable table;
-	@Override
-	public void valueChanged(ListSelectionEvent arg0) {
-		
-		
-	}
+	private JTable packageTable;
+	private JButton btnUpdateMinecraft;
+	private JButton btnUpdate;
 	public void updatePackageView()
 	{
+		ListSelectionModel lsm = packageTable.getSelectionModel();
 		//packageList.getSelectedIndices();
-		if(packageList.getSelectedIndex() < 0 || packageListModel.packageListValues == null ||  packageList.getSelectedIndex()>=packageListModel.packageListValues.length)
+		
+		if(lsm.getMinSelectionIndex() < 0 || packageTableModel.packageListValues == null ||  lsm.getMinSelectionIndex()>=packageTableModel.packageListValues.length)
 		{
 			selectedPackage = null;
 			lblPackageName.setText("No package is selected.");
 			txtpnPackageDescription.setText("");
 			btnQueueOrUnqueue.setVisible(false);
+			btnUpdate.setVisible(false);
 			return;
 		}
 		else
 		{
-			selectedPackage = packageListModel.packageListValues[packageList.getSelectedIndex()];
+			selectedPackage = packageTableModel.packageListValues[lsm.getMinSelectionIndex()];
 			lblPackageName.setText(selectedPackage.Name);
 			String subdesc = selectedPackage.FullDescription;
 			subdesc = "\t"+selectedPackage.ShortDescription +"\n\n" + subdesc.substring(subdesc.indexOf("\n"));
@@ -469,7 +557,22 @@ public class Gui implements ActionListener, ListSelectionListener {
 			txtpnPackageDescription.setText(subdesc);
 			btnQueueOrUnqueue.setVisible(true);
 			//System.out.println(selectedPackage.isQueued);
-			btnQueueOrUnqueue.setText(selectedPackage.isQueued ? "Unqueue (remove)" : "Queue (install)");
+			if(selectedPackage.getQueuedVersion() != null)
+			{
+				btnQueueOrUnqueue.setText("Unqueue (remove)");
+				if(selectedPackage.getQueuedVersion() != selectedPackage.getLatest())
+				{
+					btnUpdate.setVisible(true);
+				}
+				else
+				{
+					btnUpdate.setVisible(false);
+				}
+			}
+			else
+			{
+				btnQueueOrUnqueue.setText("Queue (install)");
+			}
 		}
 		if(selectedPackage.isCorrupt)
 		{
