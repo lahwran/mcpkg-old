@@ -444,6 +444,7 @@ public class Util {
 		//String spath=path.getPath().substring(root.getPath().length()).toLowerCase();
 		String[] notouchiedir = new String[] {"mods","saves", "screenshots"} ;
 		String[] notouchiefile = new String[] {"bin/version", "options.txt", "lastlogin"};
+		spath = spath.replace('\\', '/');
 		while(spath.startsWith("/"))
 			spath=spath.substring(1);
 		System.out.println("cantouch '"+spath+"' "+isdir);
