@@ -22,9 +22,38 @@ import mcpkg.targetting.ZipDirOutputStream;
 public class Installer {
 
 	public static final String[] targets = new String[]{"mcjar", "main"};
-	public static void run() throws FileNotFoundException, IOException, ZipException, FormatError, ModConflict
+	public static boolean run() throws FileNotFoundException, IOException, ZipException, FormatError, ModConflict
 	{
 
+		String mcvers = Util.getCachedMinecraftVersion();
+		boolean shouldwarn = false;
+		StringBuilder warning = new StringBuilder("Warning! these packages are not compatible with minecraft "+mcvers+":\n");
+		int count = 0;
+		for (int i=0; i<Queue.thequeue.size(); i++)
+		{
+			Package p = Queue.thequeue.get(i);
+			if (!p.MCVersion.equals(mcvers))
+			{
+				shouldwarn = true;
+				warning.append(p.Name);
+				warning.append(" ");
+				warning.append(p.MCVersion);
+				warning.append("/");
+				warning.append(p.Version);
+				if(count%2 == 0) warning.append("    ");
+				else warning.append("\n");
+				count++;
+			}
+		}
+		warning.append("\n\ndo you want to continue launch?");
+		if (shouldwarn)
+		{
+			if(!Messaging.confirm(warning.toString()))
+			{
+				return false;
+			}
+		}
+		
 		
 		File appdir = new File(Util.getAppDir("mcpkg")+"/");
 		File cachedir = new File(Util.getAppDir("mcpkg")+"/cache/");
@@ -33,7 +62,7 @@ public class Installer {
 		
 		File minecraftdir = new File(Util.getAppDir("minecraft")+"/");
 		
-		File backupdir = new File(appdir,"backups/"+Util.getMinecraftVersion());
+		File backupdir = new File(appdir,"backups/"+Util.getCachedMinecraftVersion());
 		if(!backupdir.exists())
 		{
 			Messaging.message("Making backup ...");
@@ -149,7 +178,7 @@ public class Installer {
 		if(in.exists())
 			Util.deleteDirMean(in); 
 		
-		
+		return true;
 		
 		
 	}

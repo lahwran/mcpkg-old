@@ -160,7 +160,11 @@ public class Commands extends Thread {
 				Index.loadrepos(false);
 				Queue.readqueue();
 				
-					Installer.run();
+				if(!Installer.run())
+				{
+					Messaging.message("Canceled launch...");
+					return;
+				}
 				
 				Messaging.message("Getting Launcher...");
 				File appdir = new File(Util.getAppDir("mcpkg")+"/");

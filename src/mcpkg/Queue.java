@@ -387,20 +387,20 @@ public class Queue {
 					shouldcont = true;
 				}
 			}
-			if(i>0)
-				s.append(" ");
-			else
+			if(i==0)
 				s.append("Packages to be queued:\n");
 			if (shouldcont)
 				continue;
 			else
 				System.out.println("adding "+x.Name);
+
 			s.append(x.Name);
-			if(!x.Version.equals(".") && false)
-			{
-				s.append("==");
-				s.append(x.Version);
-			}
+			s.append(" ");
+			s.append(x.MCVersion);
+			s.append("/");
+			s.append(x.Version);
+			if(i%2 == 0) s.append("    ");
+			else s.append("\n");
 		}
 		for(int i=0; i<toremove.size(); i++)
 		{
@@ -421,15 +421,39 @@ public class Queue {
 				continue;
 			if(i==0)
 				s.append("\nPackages to be removed:");
-			if(i>0)
-				s.append(" ");
 			s.append(x.Name);
-			if(!x.Version.equals(".") && false)
+			s.append(" ");
+			s.append(x.MCVersion);
+			s.append("/");
+			s.append(x.Version);
+			if(i%2 == 0) s.append("    ");
+			else s.append("\n");
+		}
+
+		s.append("\n");
+		String MCVers = Util.getCachedMinecraftVersion();
+		int count = 0;
+		for(int i=0; i<toinstall.size(); i++)
+		{
+			Package x = toinstall.get(i);
+			if(!x.MCVersion.equals(MCVers))
 			{
-				s.append("==");
+				if(count == 0)
+				{
+					s.append("WARNING: following mods are not compatible with minecraft "+MCVers+":\n");
+				}
+				s.append(x.Name);
+				s.append(" ");
+				s.append(x.MCVersion);
+				s.append("/");
 				s.append(x.Version);
+				if(count%2 == 0) s.append("    ");
+				else s.append("\n");
+				count++;
 			}
 		}
+		
+		s.append("\ncontinue?");
 		if(Messaging.confirm(s.toString()))
 		{
 			for(int i=0; i<toinstall.size(); i++)
@@ -480,14 +504,11 @@ public class Queue {
 		for(int i=0; i<toremove.size(); i++)
 		{
 			Package x = toremove.get(i);
-			if(i>0)
-				s.append(" ");
 			s.append(x.Name);
-			if(!x.Version.equals(".") && false)
-			{
-				s.append("==");
-				s.append(x.Version);
-			}
+			s.append(" ");
+			s.append(x.MCVersion);
+			s.append("/");
+			s.append(x.Version);
 		}
 		if(Messaging.confirm(s.toString()))
 		{
@@ -547,15 +568,17 @@ public class Queue {
 					shouldcont = true;
 				}
 			}
-			if(i>0)
-				s.append(" ");
-			else
+			if(i==0)
 				s.append("Packages to be queued:\n");
 			if (shouldcont)
 				continue;
 			else
 				System.out.println("adding "+x.Name);
 			s.append(x.Name);
+			s.append(" ");
+			s.append(x.MCVersion);
+			s.append("/");
+			s.append(x.Version);
 			/*if(!x.Version.equals(".") && false)
 			{
 				s.append("==");
@@ -608,6 +631,30 @@ public class Queue {
 				s.append(x.Version);
 			}*/
 		}
+		s.append("\n");
+		String MCVers = Util.getCachedMinecraftVersion();
+		int count = 0;
+		for(int i=0; i<toinstall.size(); i++)
+		{
+			Package x = toinstall.get(i);
+			if(!x.MCVersion.equals(MCVers))
+			{
+				if(count == 0)
+				{
+					s.append("WARNING: following mods are not compatible with minecraft "+MCVers+":\n");
+				}
+				s.append(x.Name);
+				s.append(" ");
+				s.append(x.MCVersion);
+				s.append("/");
+				s.append(x.Version);
+				if(count%2 == 0) s.append("    ");
+				else s.append("\n");
+				count++;
+			}
+		}
+		
+		s.append("\ncontinue?");
 		if(Messaging.confirm(s.toString()))
 		{
 			for(int i=0; i<toinstall.size(); i++)

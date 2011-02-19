@@ -18,6 +18,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
@@ -102,7 +103,7 @@ public class Gui implements ActionListener{
 				"", "ID", "Queued", "Avail.", "Section", "Description"
 			};
 		Class[] columnTypes = new Class[] {
-				Boolean.class, Object.class, Object.class, Object.class, Object.class, Object.class
+				Color.class, Object.class, Object.class, Object.class, Object.class, Object.class
 			};
 		
 		@Override
@@ -129,27 +130,249 @@ public class Gui implements ActionListener{
 			return packageListValues != null ? packageListValues.length : 0;
 		}
 
-		@Override
+		//extremely long name warning in these constants ...
+		public final Color colorSafeToInstall = new Color(0xffffff); //0
+		public final Color colorInstalled = new Color(0x1bdc1b); //7
+		public final Color colorBroken = new Color(0xd42020); //3
+		
+		public final Color colorIncompatMCUpgrade = new Color(0x11e7d0); //1
+		public final Color colorRequireMCUpgrade = new Color(0xf4aa28); //2
+		
+		
+		public final Color colorPackageUpdateRequired = new Color(0xffd284); //4
+		public final Color colorNoPackageUpdate = new Color(0xffd284); //5
+		
+		public final Color colorPackageUpdateAvail = new Color(0x1624de); //6
+		
+
+		public final Color colorNotSafeToInstall = new Color(0xff8484);
+		public final Color colorNotInstalledIncompatMCUpgrade = new Color(0xbcfff8);
+		public final Color colorNotInstalledRequireMCUpgrade = new Color(0xffe3b3);
+		public final Color colorUpgradeAvailWillBreak = new Color(0xe5ec1f);
+		public final Color colorMCAndPackageUpgrade = new Color(0xec621f);
+		public final Color colorMCUpgradePackageUpgradeCurrentMCVersion = new Color(0x16a8de);
+		public final Color colorPackageBrokenUpgradeBoth = new Color(0xff5400);
+		
+		
+		//not installed, safe to install - _0
+		//not installed, not safe to install - ff8484
+		//not installed, can install but will not work if minecraft is upgraded - bcfff8
+		//not installed, will not work unless minecraft is upgraded before install - ffe3b3
+		//everything is up to date and it's queued - _7
+		//everything is up to date but conflicts with minecraft - _3
+		//package is up to date, will not work if minecraft is updated, no upgrade available - _1
+		//package is up to date, but needs an upgrade of minecraft to be used - _2
+		//package is up to date but conflicts with minecraft - _3
+		//package upgrade is available, will work fine - _6
+		//package upgrade is available but will break package - e5ec1f
+		//upgrade is available that will fix current version incompatibility - _4
+		//conflicts - _3
+		//minecraft upgrade is available and package upgrade is available, must upgrade both - ec621f
+		//minecraft upgrade is available, package upgrade is available but is for current version - 16a8de
+		//package upgrade will break package - minecraft upgrade is available - _5
+		//minecraft upgrade is required to use package - package upgrade is available - _2
+		//upgrade of package will make it compatible with current version, but make it incompatible with latest minecraft - _3
+		//upgrade will break package - minecraft upgrade is available but doesn't matter - _5
+		//package is currently broken, but upgrading both minecraft and the package will fix this - ff5400
+		//package is currently broken, but upgrading will make it compatible with current minecraft - _4
+		//package is broken, upgrade is available that will make no difference - minecraft upgrade available - _3
+
+		//_0 clean
+		//_1 generally, will not work if minecraft is updated - 11e7d0
+		//_2 generally, will only work if minecraft is updated - f4aa28
+		//_3 generally, will not work - d42020
+
+		//_4 generally, will only work if package is updated - ecd11f
+		//_5 generally, will not work if package is updated - c81fec
+		//_6 generally, package upgrade is available - 1624de
+		//_7 generally, things are good - 1bdc1b
+		
+		
+		//@Override
 		public Object getValueAt(int packagenum, int fieldnum) {
 			// TODO Auto-generated method stub
-			Package p = packageListValues[packagenum];
+			Package p = packageListValues[packagenum]; //don't make any assumptions about what version we have here
 			if(p.isCorrupt) //should never happen with the new read prevention
 				calcList();
+			Package queuedVersion = p.getQueuedVersion();
+			Package latestVersion = p.getLatest();
 			switch (fieldnum)
 			{
 			case 0:
-				return p.getQueuedVersion() != null;
+				String mcvers = Util.getCachedMinecraftVersion();
+				String latestmcvers = null;
+				try{
+					latestmcvers = Util.getLatestMinecraftVersion();
+				}catch (Throwable t)
+				{
+					Messaging.message(t.getMessage());
+					t.printStackTrace();
+					latestmcvers = mcvers;
+				}
+				boolean mcislatest = latestmcvers.equals(mcvers);
+				if(queuedVersion == null)
+				{
+					if(mcislatest)
+					{
+						if(latestVersion.MCVersion.equals(mcvers))
+						{
+							//not installed, safe to install
+							return colorSafeToInstall;
+						}
+						else
+						{
+							//not installed, not safe to install
+							return colorNotSafeToInstall;
+						}
+					}
+					else
+					{
+						if(latestVersion.MCVersion.equals(mcvers))
+						{
+							//not installed, can install but will not work if minecraft is upgraded
+							return colorNotInstalledIncompatMCUpgrade;
+						}
+						else if(latestVersion.MCVersion.equals(latestmcvers))
+						{
+							//not installed, will not work unless minecraft is upgraded before install
+							return colorNotInstalledRequireMCUpgrade;
+						}
+						else
+						{
+							//not installed, not safe to install
+							return colorNotSafeToInstall;
+						}
+					}
+				}
+				else
+				{
+					if(queuedVersion == latestVersion)
+					{
+						if (mcislatest)
+						{
+							if(queuedVersion.MCVersion.equals(mcvers))
+							{
+								//everything is up to date and it's queued
+								return colorInstalled;
+							}
+							else
+							{
+								//everything is up to date but conflicts with minecraft
+								return colorBroken;
+							}
+						}
+						else
+						{
+							if(queuedVersion.MCVersion.equals(mcvers))
+							{
+								//package is up to date, will not work if minecraft is updated, no upgrade available
+								return colorIncompatMCUpgrade;
+							}
+							else if (queuedVersion.MCVersion.equals(latestmcvers))
+							{
+								//package is up to date, but needs an upgrade of minecraft to be used
+								return colorRequireMCUpgrade;
+							}
+							else
+							{
+								//package is up to date but conflicts with minecraft
+								return colorBroken;
+							}
+						}
+					}
+					else
+					{
+						if(mcislatest)
+						{
+							if(queuedVersion.MCVersion.equals(mcvers) && latestVersion.MCVersion.equals(mcvers))
+							{
+								//package upgrade is available, will work fine
+								return colorPackageUpdateAvail;
+							}
+							else if(queuedVersion.MCVersion.equals(mcvers))
+							{
+								//package upgrade is available but will break package
+								return colorUpgradeAvailWillBreak;
+							}
+							else if(latestVersion.MCVersion.equals(mcvers))
+							{
+								//upgrade is available that will fix current version incompatibility
+								return colorPackageUpdateRequired;
+							}
+							else
+							{
+								//conflicts
+								return colorBroken;
+							}
+						}
+						else
+						{
+							if(queuedVersion.MCVersion.equals(mcvers))
+							{
+								if(latestVersion.MCVersion.equals(latestmcvers))
+								{
+									//minecraft upgrade is available and package upgrade is available, must upgrade both
+									return colorMCAndPackageUpgrade;
+								}
+								else if(latestVersion.MCVersion.equals(mcvers))
+								{
+									//minecraft upgrade is available, package upgrade is available but is for current version
+									return colorMCUpgradePackageUpgradeCurrentMCVersion;
+								}
+								else
+								{
+									//package upgrade will break package - minecraft upgrade is available
+									return colorNoPackageUpdate;
+								}
+							}
+							else if(queuedVersion.MCVersion.equals(latestmcvers))
+							{
+								if(latestVersion.MCVersion.equals(latestmcvers))
+								{
+									//minecraft upgrade is required to use package - package upgrade is available
+									return colorRequireMCUpgrade;
+								}
+								else if (latestVersion.MCVersion.equals(mcvers))
+								{
+									//upgrade of package will make it compatible with current version, but make it incompatible with latest minecraft
+									return colorBroken;
+								}
+								else
+								{
+									//upgrade will break package - minecraft upgrade is available but doesn't matter
+									return colorNoPackageUpdate;
+								}
+							}
+							else
+							{
+								if(latestVersion.MCVersion.equals(latestmcvers))
+								{
+									//package is currently broken, but upgrading both minecraft and the package will fix this
+									return colorPackageBrokenUpgradeBoth;
+								}
+								else if (latestVersion.MCVersion.equals(mcvers))
+								{
+									//package is currently broken, but upgrading will make it compatible with current minecraft
+									return colorPackageUpdateRequired;
+								}
+								else
+								{
+									//package is broken, upgrade is available that will make no difference - minecraft upgrade available
+									return colorBroken;
+								}
+							}
+						}
+					}
+				}
 			case 1:
 				return p.Name;
 			case 2:
-				Package queuedVersion =  p.getQueuedVersion();
 				if (queuedVersion == null)
 					return "";
 				else
 					return queuedVersion.MCVersion+"/"+queuedVersion.Version;
 			case 3:
-				Package p1 = p.getLatest();
-				return p1.MCVersion+"/"+p1.Version;
+				return latestVersion.MCVersion+"/"+latestVersion.Version;
 			case 4:
 				return p.Section;
 			case 5:
@@ -383,6 +606,7 @@ public class Gui implements ActionListener{
 		packageTable.getColumnModel().getColumn(5).setPreferredWidth(217);
 		packageTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		packageTable.setFillsViewportHeight(true);
+		packageTable.setDefaultRenderer(Color.class, new CellColorRenderer(true));
 		
 		ListSelectionModel rowSM = packageTable.getSelectionModel();
 		rowSM.addListSelectionListener(new ListSelectionListener() {

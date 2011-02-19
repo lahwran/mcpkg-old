@@ -7,9 +7,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
+
+import mcpkg.targetting.IArchive;
+import mcpkg.targetting.IEntry;
+import mcpkg.targetting.ZipArchive;
 
 
 public class Util {
@@ -62,10 +68,124 @@ public class Util {
 		return null;
 	}
 
-	
-	public static String getMinecraftVersion()
+	public static String mcversioncache = null;
+	public static String getCachedMinecraftVersion()
 	{//will be a bit of work to get, should cache results
-		return "1.2_02"; //for testing purposes until I actually write this
+		//return "1.2_02"; //for testing purposes until I actually write this
+		if(mcversioncache == null)
+		{
+			String s = getMinecraftVersion();
+			return s;
+		}
+		else
+			return mcversioncache;
+	}
+	public static Pattern pattern = Pattern.compile("Minecraft[:][^0-9]*([0-9._]*)");
+	public static String getMinecraftVersion()
+	{
+		try {
+			
+			File appdir = new File(Util.getAppDir("minecraft")+"/");
+			appdir.mkdirs();//won't do anything if it's not needed
+			File mcjar = new File(appdir, "/bin/minecraft.jar");
+			IArchive jarreader = new ZipArchive(mcjar);
+			
+			IEntry[][] entries =  Patcher.readZip(jarreader);
+			
+			for(int i=0; i<entries[0].length; i++)
+			{
+				IEntry in = entries[0][i];
+				if(in.getName().endsWith(".class"))
+				{
+					int inSize = (int)in.getSize();
+					byte[] inBytes = new byte[inSize];
+					InputStream sourceStream = jarreader.getInputStream(in);
+					
+					//this is icky, jd-gui generated it, I just hope it's some optimization and that the original wasn't icky like this
+					for (int erg = sourceStream.read(inBytes); erg < inBytes.length; erg += sourceStream.read(inBytes, erg, inBytes.length - erg));
+					sourceStream.close();
+					String filestring = new String(inBytes);
+					
+					Matcher matcher = pattern.matcher(filestring);
+					if(matcher.find())
+					{ //we found it
+						mcversioncache = matcher.group(1);
+						break;
+					}
+				}
+			}
+			if(mcversioncache == null)
+			{
+				throw new Exception("did not find error report file - you may need to redownload mcpkg!");
+			}
+			System.out.println("Extracted version: "+mcversioncache);
+			return mcversioncache;
+		}catch(Throwable e)
+		{
+			e.printStackTrace();
+			Messaging.message(e.getClass().getSimpleName()+": "+e.getMessage());
+			System.out.println("error");
+			return "1:error";
+		}
+		
+		
+	}
+	
+	public static String latestMCVersionCache = null;
+	public static Pattern tktechpattern = Pattern.compile("Version: ([0-9_.]*) \\[([0-9]*)\\]");
+	public static String[] getTktechVersion() throws Throwable
+	{
+		try{
+			if(latestMCVersionCache == null)
+			{
+				String theurl = "http://cia.vc/stats/project/mc-ver/.rss?ver=2&medium=plaintext&limit=1";
+				StringBuilder out = new StringBuilder();
+				InputStream fin = null;
+				byte[] buffer = new byte[4096]; //Buffer 4K at a time (you can change this).
+				int bytesRead;
+				try {
+					//open the files for input and output
+					fin = Util.readURL(theurl);
+					//while bytesRead indicates a successful read, lets write...
+					while ((bytesRead = fin.read(buffer)) >= 0) {
+						out.append(new String(buffer),0,bytesRead);
+					}
+				} catch (IOException e) { //Error copying file... 
+					IOException wrapper = new IOException("copyFiles: Unable to download file " + 
+							theurl + ".");
+					wrapper.initCause(e);
+					wrapper.setStackTrace(e.getStackTrace());
+					throw wrapper;
+				} finally { //Ensure that the files are closed (if they were open).
+					if (fin != null) { fin.close(); }
+				}
+				
+				latestMCVersionCache = out.toString();
+			}
+			Matcher matcher = tktechpattern.matcher(latestMCVersionCache);
+			System.out.println("~~"+latestMCVersionCache+">>");
+			if(matcher.find())
+			{
+				System.out.println(matcher.group(2));
+				
+				System.out.println(matcher.group(1));
+				return new String[]{matcher.group(1), matcher.group(2)};
+			}
+			else
+			{
+				throw new Exception("tktech's version feed does not match regex - will probably require a mcpkg update to fix");
+			}
+			
+		} catch (Throwable e) {
+			e.printStackTrace();
+			Messaging.message(e.getClass().getSimpleName()+": "+e.getMessage());
+			throw e;
+		}
+	}
+	public static String getLatestMinecraftVersion() throws Throwable
+	{
+		//.* .*
+		return getTktechVersion()[0];
 	}
 	
 	public static InputStream readURL(String u)
