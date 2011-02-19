@@ -681,8 +681,9 @@ public class Gui implements ActionListener{
 		GuiMessagingThread g = new GuiMessagingThread(lblStatus, frmMcpkg, this);
 		Commands.launchthread();
 		
-		
-		
+
+		selectionPane.setDividerLocation(250);
+		btnUpdateMinecraft.setVisible(false);
 		
 		/*JList list = new JList();
 		list.setModel(new AbstractListModel() {

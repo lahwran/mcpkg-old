@@ -163,12 +163,12 @@ public class Util {
 				latestMCVersionCache = out.toString();
 			}
 			Matcher matcher = tktechpattern.matcher(latestMCVersionCache);
-			System.out.println("~~"+latestMCVersionCache+">>");
+			//System.out.println("~~"+latestMCVersionCache+">>");
 			if(matcher.find())
 			{
-				System.out.println(matcher.group(2));
+				//System.out.println(matcher.group(2));
 				
-				System.out.println(matcher.group(1));
+				//System.out.println(matcher.group(1));
 				return new String[]{matcher.group(1), matcher.group(2)};
 			}
 			else
@@ -446,14 +446,14 @@ public class Util {
 		String[] notouchiefile = new String[] {"bin/version", "options.txt", "lastlogin"};
 		while(spath.startsWith("/"))
 			spath=spath.substring(1);
-		//System.out.println("cantouch '"+spath+"' "+isdir);
+		System.out.println("cantouch '"+spath+"' "+isdir);
 		if(!isdir)
 		{
 			for (int i=0; i<notouchiefile.length; i++)
 				if(spath.startsWith(notouchiefile[i]+"/") || spath.equals(notouchiefile[i]))
 				{
 					System.out.println("cantouch false '"+spath+"' "+isdir);
-					//System.out.println();
+					System.out.println();
 					return false;
 				}
 		} else
@@ -462,12 +462,12 @@ public class Util {
 				if(spath.startsWith(notouchiedir[i]+"/") || spath.equals(notouchiedir[i]))
 				{
 					System.out.println("cantouch false '"+spath+"' "+isdir);
-					//System.out.println();
+					System.out.println();
 					return false;
 				}
 		}
-		//System.out.println("cantouch true");
-		//System.out.println();
+		System.out.println("cantouch true");
+		System.out.println();
 		return true;
 	}
 
