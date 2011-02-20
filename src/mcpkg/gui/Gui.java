@@ -466,6 +466,18 @@ public class Gui implements ActionListener{
 				}
 				mp = templist.toArray(new Package[0]);
 			}
+			else if (section.equals("") || section.equals("all"))
+			{
+				ArrayList<Package> templist = new ArrayList<Package>();
+				for(int i=0; i<mp.length; i++)
+				{
+					if(!mp[i].Section.equals("libraries"))
+					{
+						templist.add(mp[i]);
+					}
+				}
+				mp = templist.toArray(new Package[0]);
+			}
 		}
 		packageTableModel.set(mp);
 		//for(int )

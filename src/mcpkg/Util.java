@@ -447,14 +447,14 @@ public class Util {
 		spath = spath.replace('\\', '/');
 		while(spath.startsWith("/"))
 			spath=spath.substring(1);
-		System.out.println("cantouch '"+spath+"' "+isdir);
+		//System.out.println("cantouch '"+spath+"' "+isdir);
 		if(!isdir)
 		{
 			for (int i=0; i<notouchiefile.length; i++)
 				if(spath.startsWith(notouchiefile[i]+"/") || spath.equals(notouchiefile[i]))
 				{
 					System.out.println("cantouch false '"+spath+"' "+isdir);
-					System.out.println();
+					//System.out.println();
 					return false;
 				}
 		} else
@@ -463,12 +463,12 @@ public class Util {
 				if(spath.startsWith(notouchiedir[i]+"/") || spath.equals(notouchiedir[i]))
 				{
 					System.out.println("cantouch false '"+spath+"' "+isdir);
-					System.out.println();
+					//System.out.println();
 					return false;
 				}
 		}
-		System.out.println("cantouch true");
-		System.out.println();
+		//System.out.println("cantouch true");
+		//System.out.println();
 		return true;
 	}
 
